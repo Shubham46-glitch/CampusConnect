@@ -1,0 +1,155 @@
+import React, { useState, useEffect } from 'react';
+import Input from '../Input';
+import Button from '../Button';
+
+const STATUS_OPTIONS = ['active', 'closed', 'archived'];
+
+const AssignmentForm = ({ initialValues = {}, onSubmit, loading, submitText = 'Publish Assignment' }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    subject: '',
+    department: '',
+    dueDate: '',
+    totalMarks: 100,
+    status: 'active',
+  });
+
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (initialValues && Object.keys(initialValues).length > 0) {
+      setFormData({
+        title: initialValues.title || '',
+        description: initialValues.description || '',
+        subject: initialValues.subject || '',
+        department: initialValues.department || '',
+        dueDate: initialValues.dueDate ? new Date(initialValues.dueDate).toISOString().split('T')[0] : '',
+        totalMarks: initialValues.totalMarks !== undefined ? initialValues.totalMarks : 100,
+        status: initialValues.status || 'active',
+      });
+    }
+  }, [initialValues]);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!formData.title.trim() || !formData.description.trim() || !formData.subject.trim() || !formData.department.trim() || !formData.dueDate) {
+      setError('Please fill in all required fields.');
+      return;
+    }
+
+    if (Number(formData.totalMarks) < 1) {
+      setError('Total marks must be at least 1.');
+      return;
+    }
+
+    onSubmit(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      {error && (
+        <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold rounded-lg">
+          {error}
+        </div>
+      )}
+
+      <Input
+        label="Assignment Title"
+        name="title"
+        placeholder="e.g., MERN Stack E-Commerce API Implementation"
+        value={formData.title}
+        onChange={handleChange}
+        required
+      />
+
+      <div className="space-y-1.5">
+        <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+          Assignment Description & Guidelines *
+        </label>
+        <textarea
+          name="description"
+          rows={5}
+          placeholder="Detailed problem statement and submission instructions..."
+          value={formData.description}
+          onChange={handleChange}
+          required
+          className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none placeholder:text-slate-400"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Input
+          label="Subject / Course"
+          name="subject"
+          placeholder="e.g., Full Stack Web Development"
+          value={formData.subject}
+          onChange={handleChange}
+          required
+        />
+
+        <Input
+          label="Department"
+          name="department"
+          placeholder="e.g., Computer Science"
+          value={formData.department}
+          onChange={handleChange}
+          required
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Input
+          label="Due Date"
+          name="dueDate"
+          type="date"
+          value={formData.dueDate}
+          onChange={handleChange}
+          required
+        />
+
+        <Input
+          label="Total Marks"
+          name="totalMarks"
+          type="number"
+          min="1"
+          value={formData.totalMarks}
+          onChange={handleChange}
+          required
+        />
+
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+            Status *
+          </label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none capitalize"
+          >
+            {STATUS_OPTIONS.map((st) => (
+              <option key={st} value={st}>
+                {st}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="pt-2 flex justify-end">
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Saving...' : submitText}
+        </Button>
+      </div>
+    </form>
+  );
+};
+
+export default AssignmentForm;
