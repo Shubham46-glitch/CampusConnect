@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: campusconnect-backend
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    rootDir: server
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+
+  - type: web
+    name: campusconnect-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./client/dist
+    rootDir: client
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

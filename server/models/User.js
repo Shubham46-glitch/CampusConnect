@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+import { DEPARTMENTS, DEFAULT_DEPARTMENT } from '../constants/departments.js';
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -14,7 +16,7 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email address'],
+      match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,6})+$/, 'Please provide a valid email address'],
     },
     password: {
       type: String,
@@ -28,10 +30,21 @@ const userSchema = new mongoose.Schema(
     },
     department: {
       type: String,
-      required: [true, 'Department is required'],
-      default: 'Computer Science',
+      default: '',
+      enum: {
+        values: [...DEPARTMENTS, ''],
+        message: '{VALUE} is not a valid department',
+      },
+      validate: {
+        validator: function (v) {
+          if (this.role === 'admin') return true;
+          return Boolean(v && DEPARTMENTS.includes(v));
+        },
+        message: 'Department is required for Students and Faculty',
+      },
       trim: true,
     },
+
     status: {
       type: String,
       enum: ['active', 'inactive'],

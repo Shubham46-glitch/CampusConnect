@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import { logActivity } from '../utils/activityLogger.js';
 
 // @desc    Get all users (admin only)
 // @route   GET /api/users
@@ -14,7 +15,7 @@ export const getUsers = async (req, res, next) => {
 
 // @desc    Get Students Roster with Search, Department Filter, Status Filter & Pagination
 // @route   GET /api/users/students
-// @access  Private/Admin
+// @access  Private (Admin or Faculty for their department)
 export const getStudents = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page, 10) || 1;
@@ -22,6 +23,13 @@ export const getStudents = async (req, res, next) => {
     const skip = (page - 1) * limit;
 
     const query = { role: 'student' };
+
+    // SECURITY ENFORCEMENT: Faculty members are strictly locked to THEIR OWN department.
+    if (req.user.role === 'faculty') {
+      query.department = req.user.department;
+    } else if (req.user.role === 'admin' && req.query.department && req.query.department !== 'all') {
+      query.department = req.query.department;
+    }
 
     // Search filter across name, email, department, rollNumber
     if (req.query.search && req.query.search.trim()) {
@@ -32,11 +40,6 @@ export const getStudents = async (req, res, next) => {
         { department: searchRegex },
         { 'profileInfo.rollNumber': searchRegex },
       ];
-    }
-
-    // Department Filter
-    if (req.query.department && req.query.department !== 'all') {
-      query.department = req.query.department;
     }
 
     // Status Filter
@@ -146,6 +149,14 @@ export const updateUserStatus = async (req, res, next) => {
     user.status = status;
     await user.save();
 
+    await logActivity({
+      action: 'USER_STATUS_UPDATED',
+      performedBy: req.user._id,
+      details: `Updated account status for ${user.name} (${user.email}) to ${status}`,
+      targetId: user._id,
+      targetType: 'User',
+    });
+
     res.json({
       message: `User account status updated to ${status}`,
       user: {
@@ -162,6 +173,42 @@ export const updateUserStatus = async (req, res, next) => {
   }
 };
 
+// @desc    Update user department (Admin only)
+// @route   PATCH /api/users/:id/department
+// @access  Private/Admin
+export const updateUserDepartment = async (req, res, next) => {
+  try {
+    const { department } = req.body;
+    if (!department || !department.trim()) {
+      return res.status(400).json({ message: 'Department is required' });
+    }
+
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const oldDept = user.department;
+    user.department = department.trim();
+    await user.save();
+
+    await logActivity({
+      action: 'USER_DEPARTMENT_UPDATED',
+      performedBy: req.user._id,
+      details: `Updated department for ${user.name} (${user.email}) from "${oldDept}" to "${user.department}"`,
+      targetId: user._id,
+      targetType: 'User',
+    });
+
+    res.json({
+      message: `User department updated to ${user.department}`,
+      user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Update user profile
 // @route   PUT /api/users/profile
 // @access  Private
@@ -171,7 +218,10 @@ export const updateUserProfile = async (req, res, next) => {
 
     if (user) {
       user.name = req.body.name || user.name;
-      user.department = req.body.department || user.department;
+      // Do NOT allow non-admins to arbitrary self-change department if locked
+      if (req.body.department && req.user.role === 'admin') {
+        user.department = req.body.department;
+      }
       if (req.body.password) {
         user.password = req.body.password;
       }
@@ -205,6 +255,13 @@ export const deleteUser = async (req, res, next) => {
     const user = await User.findById(req.params.id);
     if (user) {
       await User.deleteOne({ _id: user._id });
+      await logActivity({
+        action: 'USER_DELETED',
+        performedBy: req.user._id,
+        details: `Deleted user account: ${user.name} (${user.email})`,
+        targetId: user._id,
+        targetType: 'User',
+      });
       res.json({ message: 'User removed successfully' });
     } else {
       res.status(404).json({ message: 'User not found' });
@@ -213,3 +270,4 @@ export const deleteUser = async (req, res, next) => {
     next(error);
   }
 };
+

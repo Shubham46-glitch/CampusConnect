@@ -1,4 +1,8 @@
+import mongoose from 'mongoose';
 import User from '../models/User.js';
+import Department from '../models/Department.js';
+import AcademicClass from '../models/AcademicClass.js';
+import StudentEnrollment from '../models/StudentEnrollment.js';
 import generateToken from '../utils/generateToken.js';
 import { createNotification } from './notificationController.js';
 
@@ -7,7 +11,7 @@ import { createNotification } from './notificationController.js';
 // @access  Public
 export const registerUser = async (req, res, next) => {
   try {
-    const { name, email, password, role, department, rollNumber, employeeId } = req.body;
+    const { name, email, password, role, department, className, academicClass, rollNumber, employeeId } = req.body;
 
     // 1. Input presence validation
     if (!name || !email || !password) {
@@ -18,7 +22,7 @@ export const registerUser = async (req, res, next) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     // 3. Email format regex validation
-    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(normalizedEmail)) {
       return res.status(400).json({ message: 'Please provide a valid email address' });
     }
@@ -35,19 +39,106 @@ export const registerUser = async (req, res, next) => {
       return res.status(400).json({ message: 'Invalid role specified' });
     }
 
+    // Role-specific field validation & Department / AcademicClass resolution
+    let deptDoc = null;
+    let classDoc = null;
+
+    if (userRole === 'student') {
+      if (!department || !department.trim()) {
+        return res.status(400).json({ message: 'Department is required for Student registration' });
+      }
+      const classInput = className || academicClass || req.body.class;
+      if (!classInput || !String(classInput).trim()) {
+        return res.status(400).json({ message: 'Class / Division is required for Student registration' });
+      }
+      if (!rollNumber || !rollNumber.trim()) {
+        return res.status(400).json({ message: 'Roll Number is required for Student registration' });
+      }
+
+      // Resolve Department Document
+      if (mongoose.Types.ObjectId.isValid(department)) {
+        deptDoc = await Department.findById(department);
+      }
+      if (!deptDoc) {
+        deptDoc = await Department.findOne({
+          $or: [
+            { name: new RegExp(`^${department.trim()}$`, 'i') },
+            { code: new RegExp(`^${department.trim()}$`, 'i') },
+          ],
+        });
+      }
+      if (!deptDoc) {
+        return res.status(400).json({ message: `Department "${department}" does not exist` });
+      }
+
+      // Resolve AcademicClass Document
+      if (mongoose.Types.ObjectId.isValid(classInput)) {
+        classDoc = await AcademicClass.findById(classInput);
+      }
+      if (!classDoc) {
+        classDoc = await AcademicClass.findOne({
+          name: String(classInput).trim(),
+          department: deptDoc._id,
+        });
+      }
+      if (!classDoc) {
+        return res.status(400).json({ message: `Class / Division "${classInput}" does not exist` });
+      }
+
+      // STRICT BACKEND VALIDATION: Check class belongs to selected department
+      if (classDoc.department.toString() !== deptDoc._id.toString()) {
+        return res.status(400).json({
+          message: `Invalid class selection: "${classDoc.name}" does not belong to "${deptDoc.name}" department.`,
+        });
+      }
+    } else if (userRole === 'faculty') {
+      if (!department || !department.trim()) {
+        return res.status(400).json({ message: 'Department is required for Faculty registration' });
+      }
+      if (!employeeId || !employeeId.trim()) {
+        return res.status(400).json({ message: 'Employee ID is required for Faculty registration' });
+      }
+
+      // Resolve Department Document
+      if (mongoose.Types.ObjectId.isValid(department)) {
+        deptDoc = await Department.findById(department);
+      }
+      if (!deptDoc) {
+        deptDoc = await Department.findOne({
+          $or: [
+            { name: new RegExp(`^${department.trim()}$`, 'i') },
+            { code: new RegExp(`^${department.trim()}$`, 'i') },
+          ],
+        });
+      }
+      if (!deptDoc) {
+        const codePrefix = String(department).split(' ').map((w) => w[0]).join('').toUpperCase();
+        deptDoc = await Department.create({
+          name: department.trim(),
+          code: codePrefix,
+          description: `${department.trim()} Department`,
+        });
+      }
+    } else if (userRole === 'admin') {
+      if (!employeeId || !employeeId.trim()) {
+        return res.status(400).json({ message: 'Employee/Admin ID is required for Administrator registration' });
+      }
+    }
+
     // 6. Check duplicate user email
     const userExists = await User.findOne({ email: normalizedEmail });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists with this email address' });
     }
 
-    // 7. Create user in MongoDB Atlas (pre-save hook hashes password)
+    // 7. Create user in MongoDB Atlas
+    const targetDepartmentName = deptDoc ? deptDoc.name : (department ? department.trim() : '');
     const user = await User.create({
       name: name.trim(),
       email: normalizedEmail,
       password,
       role: userRole,
-      department: department ? department.trim() : 'Computer Science',
+      department: targetDepartmentName,
       profileInfo: {
         rollNumber: rollNumber ? rollNumber.trim() : '',
         employeeId: employeeId ? employeeId.trim() : '',
@@ -55,7 +146,18 @@ export const registerUser = async (req, res, next) => {
     });
 
     if (user) {
-      // Notify admins about new user registration using professional format
+      // Create StudentEnrollment record for student role
+      if (userRole === 'student' && classDoc && deptDoc) {
+        await StudentEnrollment.create({
+          student: user._id,
+          academicClass: classDoc._id,
+          department: deptDoc._id,
+          rollNumber: rollNumber ? rollNumber.trim() : '',
+          status: 'active',
+        });
+      }
+
+      // Notify admins about new user registration
       const admins = await User.find({ role: 'admin' }).select('_id');
       const isStudent = user.role === 'student';
       const isFaculty = user.role === 'faculty';

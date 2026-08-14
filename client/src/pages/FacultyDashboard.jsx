@@ -8,6 +8,7 @@ import Badge from '../components/Badge';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Button from '../components/Button';
 import { getFacultyDashboard } from '../services/dashboardService';
+import { getFacultyMySubjects } from '../services/attendanceService';
 import useAuth from '../hooks/useAuth';
 
 const getGreeting = () => {
@@ -20,6 +21,7 @@ const getGreeting = () => {
 const FacultyDashboard = () => {
   const { user } = useAuth();
   const [data, setData] = useState(null);
+  const [mySubjects, setMySubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -27,8 +29,12 @@ const FacultyDashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      const stats = await getFacultyDashboard();
+      const [stats, subs] = await Promise.all([
+        getFacultyDashboard(),
+        getFacultyMySubjects().catch(() => []),
+      ]);
       setData(stats);
+      setMySubjects(subs || []);
     } catch (err) {
       console.error('Error fetching faculty dashboard data', err);
       setError(err.response?.data?.message || 'Failed to load faculty dashboard statistics');
@@ -75,6 +81,8 @@ const FacultyDashboard = () => {
     pendingSubmissionsList = [],
   } = data || {};
 
+  const totalAssignedStudents = mySubjects.reduce((sum, item) => sum + (item.studentCount || 0), 0);
+
   return (
     <div className="space-y-6">
       {/* Header Introduction */}
@@ -86,19 +94,32 @@ const FacultyDashboard = () => {
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchFacultyData}
-          className="self-start sm:self-center"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Refresh</span>
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Link to="/faculty/subjects">
+            <Button variant="primary" size="sm">
+              <CheckSquare className="w-4 h-4 mr-1" /> Take Attendance
+            </Button>
+          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchFacultyData}
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Refresh</span>
+          </Button>
+        </div>
       </div>
 
-      {/* 4 Metric Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      {/* 5 Metric Cards Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <DashboardCard
+          title="Assigned Subjects"
+          value={mySubjects.length}
+          icon={BookOpen}
+          color="brand"
+          indicator={`${totalAssignedStudents} Students Enrolled`}
+        />
         <DashboardCard
           title="Events Created"
           value={eventsCreated}
@@ -117,7 +138,7 @@ const FacultyDashboard = () => {
           title="Total Submissions"
           value={totalSubmissions}
           icon={FileText}
-          color="brand"
+          color="emerald"
           indicator="Student submissions"
         />
         <DashboardCard

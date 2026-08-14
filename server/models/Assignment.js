@@ -19,6 +19,14 @@ const assignmentSchema = new mongoose.Schema(
       required: [true, 'Subject is required'],
       trim: true,
     },
+    subjectId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Subject',
+    },
+    academicClass: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'AcademicClass',
+    },
     faculty: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -27,6 +35,17 @@ const assignmentSchema = new mongoose.Schema(
     department: {
       type: String,
       required: [true, 'Department is required'],
+      trim: true,
+    },
+    semester: {
+      type: Number,
+      min: [1, 'Semester must be at least 1'],
+      max: [8, 'Semester cannot exceed 8'],
+      default: 1,
+    },
+    section: {
+      type: String,
+      default: '',
       trim: true,
     },
     dueDate: {

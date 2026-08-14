@@ -1,6 +1,7 @@
 import Complaint from '../models/Complaint.js';
 import User from '../models/User.js';
 import { createNotification } from './notificationController.js';
+import { logActivity } from '../utils/activityLogger.js';
 
 // @desc    Get complaints for authenticated user (Student sees own, Admin sees all)
 // @route   GET /api/complaints
@@ -220,6 +221,16 @@ export const updateComplaintStatus = async (req, res, next) => {
     }
 
     const updatedComplaint = await complaint.save();
+
+    // Log system activity
+    await logActivity({
+      action: 'COMPLAINT_STATUS_UPDATED',
+      performedBy: req.user._id,
+      details: `Updated complaint status for "${complaint.title}" to ${status}`,
+      targetId: complaint._id,
+      targetType: 'Complaint',
+    });
+
 
     // Format notification title & message
     const formattedStatus =

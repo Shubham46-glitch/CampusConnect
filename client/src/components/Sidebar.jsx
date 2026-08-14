@@ -10,8 +10,14 @@ import {
   BarChart3,
   TrendingUp,
   GraduationCap,
+  Building2,
+  UserCheck,
+  History,
+  CheckSquare,
+  Layers,
 } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
+
 
 const Sidebar = () => {
   const { user } = useAuth();
@@ -21,26 +27,34 @@ const Sidebar = () => {
   const menuConfig = {
     student: [
       { name: 'Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
+      { name: 'Attendance', path: '/student/attendance', icon: CheckSquare },
+      { name: 'Assignments', path: '/assignments', icon: BookOpen },
       { name: 'Events', path: '/events', icon: Calendar },
       { name: 'Announcements', path: '/announcements', icon: Megaphone },
-      { name: 'Assignments', path: '/assignments', icon: BookOpen },
       { name: 'Complaints', path: '/complaints', icon: AlertCircle },
     ],
     faculty: [
       { name: 'Dashboard', path: '/faculty/dashboard', icon: LayoutDashboard },
-      { name: 'Student Performance', path: '/faculty/performance', icon: TrendingUp },
+      { name: 'My Students', path: '/faculty/performance', icon: TrendingUp },
+      { name: 'My Subjects', path: '/faculty/subjects', icon: BookOpen },
+      { name: 'Attendance', path: '/faculty/attendance-history', icon: CheckSquare },
+      { name: 'Assignments', path: '/assignments', icon: BookOpen },
       { name: 'Events', path: '/events', icon: Calendar },
       { name: 'Announcements', path: '/announcements', icon: Megaphone },
-      { name: 'Assignments', path: '/assignments', icon: BookOpen },
     ],
     admin: [
       { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-      { name: 'User Management', path: '/admin/users', icon: Users },
-      { name: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
+      { name: 'Departments', path: '/admin/departments', icon: Building2 },
+      { name: 'Academic Classes', path: '/admin/classes', icon: Layers },
+      { name: 'Subjects', path: '/admin/subjects', icon: BookOpen },
+      { name: 'Faculty Roster', path: '/admin/faculty-assignments', icon: UserCheck },
+      { name: 'Student Roster', path: '/admin/enrollments', icon: GraduationCap },
+      { name: 'Attendance Analytics', path: '/admin/attendance-analytics', icon: CheckSquare },
       { name: 'Events', path: '/events', icon: Calendar },
       { name: 'Announcements', path: '/announcements', icon: Megaphone },
-      { name: 'Assignments', path: '/assignments', icon: BookOpen },
       { name: 'Complaints', path: '/admin/complaints', icon: AlertCircle },
+      { name: 'Analytics & Reports', path: '/admin/analytics', icon: BarChart3 },
+      { name: 'Activity Logs', path: '/admin/logs', icon: History },
     ],
   };
 
@@ -48,32 +62,29 @@ const Sidebar = () => {
 
   const isLinkActive = (itemPath) => {
     const currentPath = location.pathname;
+    if (itemPath === currentPath) return true;
     if (itemPath.includes('/faculty/performance')) {
-      return currentPath.includes('/faculty/performance');
+      return currentPath.includes('/faculty/performance') || currentPath.includes('/faculty/students');
     }
-    if (itemPath.includes('/admin/users')) {
-      return currentPath.includes('/admin/users');
-    }
-    if (itemPath.includes('analytics')) {
-      return currentPath.includes('/analytics');
-    }
-    if (itemPath.includes('dashboard')) {
-      return currentPath.includes('/dashboard');
-    }
-    if (itemPath.startsWith('/events')) {
-      return currentPath.startsWith('/events');
-    }
-    if (itemPath.startsWith('/announcements')) {
-      return currentPath.startsWith('/announcements');
-    }
-    if (itemPath.startsWith('/assignments')) {
-      return currentPath.startsWith('/assignments');
-    }
-    if (itemPath.includes('complaints')) {
-      return currentPath.includes('complaints');
-    }
-    return currentPath === itemPath;
+    if (itemPath.includes('/faculty/subjects')) return currentPath.includes('/faculty/subjects') || currentPath.includes('/faculty/take-attendance');
+    if (itemPath.includes('/faculty/attendance-history')) return currentPath.includes('/faculty/attendance-history');
+    if (itemPath.includes('/student/attendance')) return currentPath.includes('/student/attendance');
+    if (itemPath.includes('/admin/classes')) return currentPath.includes('/admin/classes');
+    if (itemPath.includes('/admin/subjects')) return currentPath.includes('/admin/subjects');
+    if (itemPath.includes('/admin/faculty-assignments')) return currentPath.includes('/admin/faculty-assignments');
+    if (itemPath.includes('/admin/enrollments')) return currentPath.includes('/admin/enrollments');
+    if (itemPath.includes('/admin/attendance-analytics')) return currentPath.includes('/admin/attendance-analytics');
+    if (itemPath.includes('/admin/departments')) return currentPath.includes('/admin/departments');
+    if (itemPath.includes('/admin/logs')) return currentPath.includes('/admin/logs');
+    if (itemPath.includes('analytics')) return currentPath.includes('/analytics');
+    if (itemPath.includes('dashboard')) return currentPath.includes('/dashboard');
+    if (itemPath.startsWith('/events')) return currentPath.startsWith('/events');
+    if (itemPath.startsWith('/announcements')) return currentPath.startsWith('/announcements');
+    if (itemPath.startsWith('/assignments')) return currentPath.startsWith('/assignments');
+    if (itemPath.includes('complaints')) return currentPath.includes('complaints');
+    return false;
   };
+
 
   return (
     <aside className="w-64 bg-white text-slate-700 h-screen flex flex-col border-r border-slate-200/80 shrink-0 z-30 select-none">

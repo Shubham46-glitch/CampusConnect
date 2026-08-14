@@ -8,6 +8,7 @@ import Badge from '../components/Badge';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Button from '../components/Button';
 import { getStudentDashboard } from '../services/dashboardService';
+import { getStudentMyAttendance } from '../services/attendanceService';
 import useAuth from '../hooks/useAuth';
 
 const getGreeting = () => {
@@ -20,6 +21,7 @@ const getGreeting = () => {
 const StudentDashboard = () => {
   const { user } = useAuth();
   const [data, setData] = useState(null);
+  const [attendanceData, setAttendanceData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -27,8 +29,12 @@ const StudentDashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      const dashboardStats = await getStudentDashboard();
+      const [dashboardStats, attStats] = await Promise.all([
+        getStudentDashboard(),
+        getStudentMyAttendance().catch(() => null),
+      ]);
       setData(dashboardStats);
+      setAttendanceData(attStats);
     } catch (err) {
       console.error('Error loading student dashboard data', err);
       setError(err.response?.data?.message || 'Failed to load student dashboard statistics');
@@ -77,6 +83,12 @@ const StudentDashboard = () => {
     upcomingEventsList = [],
   } = data || {};
 
+  const overallAttPct = attendanceData?.overallPercentage || 0;
+  const lowestSub = (attendanceData?.subjects || []).reduce(
+    (min, s) => (!min || s.percentage < min.percentage ? s : min),
+    null
+  );
+
   return (
     <div className="space-y-6">
       {/* Header Introduction */}
@@ -84,7 +96,7 @@ const StudentDashboard = () => {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
           <p className="text-sm text-slate-500 mt-1">
-            {getGreeting()}, {user?.name || 'Student'} 👋 • Department of {user?.department || 'Computer Science'}
+            {getGreeting()}, {user?.name || 'Student'} 👋 • {attendanceData?.academicClass?.name ? `${attendanceData.academicClass.name} (${attendanceData.academicClass.year})` : `Department of ${user?.department || 'Computer Science'}`}
           </p>
         </div>
 
@@ -99,8 +111,30 @@ const StudentDashboard = () => {
         </Button>
       </div>
 
-      {/* 4 Metric Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      {/* Lowest Attendance Warning Alert */}
+      {lowestSub && lowestSub.percentage < 80 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between text-xs text-amber-900 shadow-2xs">
+          <div className="flex items-center space-x-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+            <div>
+              <span className="font-bold">Attendance Alert:</span> Your attendance in <strong>{lowestSub.subjectName} ({lowestSub.subjectCode})</strong> is at <strong className="text-rose-600">{lowestSub.percentage}%</strong>.
+            </div>
+          </div>
+          <Link to="/student/attendance" className="font-bold text-brand-600 hover:underline shrink-0">
+            View Details →
+          </Link>
+        </div>
+      )}
+
+      {/* 5 Metric Cards Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <DashboardCard
+          title="Overall Attendance"
+          value={`${overallAttPct}%`}
+          icon={CheckCircle2}
+          color={overallAttPct >= 85 ? 'emerald' : overallAttPct >= 75 ? 'amber' : 'rose'}
+          indicator="Subject-wise average"
+        />
         <DashboardCard
           title="Upcoming Events"
           value={upcomingEvents}

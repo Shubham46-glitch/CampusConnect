@@ -5,6 +5,7 @@ import {
   getFaculty,
   getUserById,
   updateUserStatus,
+  updateUserDepartment,
   updateUserProfile,
   deleteUser,
 } from '../controllers/userController.js';
@@ -13,8 +14,8 @@ import { authorizeRoles } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
-// Admin-only roster endpoints
-router.get('/students', protect, authorizeRoles('admin'), getStudents);
+// Faculty & Admin roster endpoints
+router.get('/students', protect, authorizeRoles('admin', 'faculty'), getStudents);
 router.get('/faculty', protect, authorizeRoles('admin'), getFaculty);
 
 // Admin-only user management
@@ -26,5 +27,7 @@ router.route('/:id')
   .delete(protect, authorizeRoles('admin'), deleteUser);
 
 router.patch('/:id/status', protect, authorizeRoles('admin'), updateUserStatus);
+router.patch('/:id/department', protect, authorizeRoles('admin'), updateUserDepartment);
 
 export default router;
+

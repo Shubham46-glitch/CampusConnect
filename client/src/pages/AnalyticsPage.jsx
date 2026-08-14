@@ -4,7 +4,6 @@ import {
   GraduationCap,
   Briefcase,
   Calendar,
-  BookOpen,
   AlertCircle,
   BarChart3,
   RefreshCw,
@@ -28,7 +27,6 @@ import {
   getAnalyticsOverview,
   getStudentsByDepartmentStats,
   getEventParticipationStats,
-  getAssignmentSubmissionStats,
   getComplaintStatusStats,
   getUserRoleDistributionStats,
 } from '../services/analyticsService';
@@ -42,7 +40,6 @@ const AnalyticsPage = () => {
   const [overview, setOverview] = useState(null);
   const [departmentData, setDepartmentData] = useState([]);
   const [eventData, setEventData] = useState([]);
-  const [assignmentData, setAssignmentData] = useState(null);
   const [complaintData, setComplaintData] = useState(null);
   const [roleData, setRoleData] = useState([]);
 
@@ -55,14 +52,12 @@ const AnalyticsPage = () => {
         overviewRes,
         deptRes,
         eventRes,
-        assignRes,
         complaintRes,
         roleRes,
       ] = await Promise.all([
         getAnalyticsOverview(),
         getStudentsByDepartmentStats(),
         getEventParticipationStats(),
-        getAssignmentSubmissionStats(),
         getComplaintStatusStats(),
         getUserRoleDistributionStats(),
       ]);
@@ -70,7 +65,6 @@ const AnalyticsPage = () => {
       setOverview(overviewRes);
       setDepartmentData(deptRes || []);
       setEventData(eventRes || []);
-      setAssignmentData(assignRes || null);
       setComplaintData(complaintRes || null);
       setRoleData(roleRes || []);
     } catch (err) {
@@ -109,15 +103,6 @@ const AnalyticsPage = () => {
     );
   }
 
-  // Format Assignment Submission data for Pie/Bar charts
-  const submissionChartData = assignmentData?.submissions
-    ? [
-        { name: 'Submitted', value: assignmentData.submissions.submitted || 0, fill: '#2563eb' },
-        { name: 'Graded', value: assignmentData.submissions.graded || 0, fill: '#10b981' },
-        { name: 'Late', value: assignmentData.submissions.late || 0, fill: '#ef4444' },
-      ].filter((item) => item.value > 0)
-    : [];
-
   // Format Complaint Status data for Pie/Bar charts
   const complaintChartData = complaintData?.summary
     ? [
@@ -132,6 +117,23 @@ const AnalyticsPage = () => {
     name: item.role ? item.role.charAt(0).toUpperCase() + item.role.slice(1) : 'Unknown',
     value: item.count,
   }));
+
+  // Format Students by Department Data to prevent label overlap
+  const formattedDeptData = departmentData.map((item) => {
+    const fullDept = item.department || 'Unknown';
+    let shortName = fullDept;
+    if (fullDept === 'Computer Science') shortName = 'Comp Sci';
+    else if (fullDept === 'Information Technology') shortName = 'Info Tech';
+    else if (fullDept === 'Artificial Intelligence & Data Science') shortName = 'AI & Data Sci';
+    else if (fullDept === 'Electronics & Computer Science') shortName = 'Elec & Comp Sci';
+    else if (fullDept === 'Electronics & Telecommunication') shortName = 'Extc';
+
+    return {
+      ...item,
+      fullName: fullDept,
+      displayName: shortName,
+    };
+  });
 
   return (
     <div className="space-y-6 select-none">
@@ -159,7 +161,7 @@ const AnalyticsPage = () => {
       </div>
 
       {/* Overview Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <DashboardCard
           title="Total Students"
           value={overview?.totalStudents || 0}
@@ -182,13 +184,6 @@ const AnalyticsPage = () => {
           indicator="Campus activities"
         />
         <DashboardCard
-          title="Assignments"
-          value={overview?.totalAssignments || 0}
-          icon={BookOpen}
-          color="amber"
-          indicator="Active coursework"
-        />
-        <DashboardCard
           title="Complaints"
           value={overview?.totalComplaints || 0}
           icon={AlertCircle}
@@ -208,14 +203,23 @@ const AnalyticsPage = () => {
             <span className="text-[11px] text-slate-400">Real MongoDB Records</span>
           </div>
 
-          {departmentData.length > 0 ? (
-            <div className="h-64 w-full">
+          {formattedDeptData.length > 0 ? (
+            <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={departmentData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                  <XAxis dataKey="department" tick={{ fontSize: 11, fill: '#64748b' }} interval={0} angle={-15} textAnchor="end" />
+                <BarChart data={formattedDeptData} margin={{ top: 10, right: 10, left: -20, bottom: 45 }}>
+                  <XAxis
+                    dataKey="displayName"
+                    tick={{ fontSize: 10, fill: '#475569', fontWeight: 600 }}
+                    interval={0}
+                    angle={-20}
+                    textAnchor="end"
+                    height={55}
+                  />
                   <YAxis tick={{ fontSize: 11, fill: '#64748b' }} allowDecimals={false} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px', fontSize: '12px' }}
+                    formatter={(value) => [`${value} Students`, 'Total Enrolled']}
+                    labelFormatter={(label, payload) => payload[0]?.payload?.fullName || label}
+                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px', fontSize: '12px', fontWeight: '600' }}
                   />
                   <Bar dataKey="count" fill="#2563eb" radius={[4, 4, 0, 0]} name="Students" />
                 </BarChart>

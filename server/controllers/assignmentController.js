@@ -60,34 +60,51 @@ export const getAssignmentById = async (req, res, next) => {
 // @access  Private (Faculty/Admin)
 export const createAssignment = async (req, res, next) => {
   try {
-    const { title, description, subject, department, dueDate, totalMarks, status } = req.body;
+    const { title, description, subject, department, semester, section, dueDate, totalMarks, status } = req.body;
 
-    if (!title || !description || !subject || !department || !dueDate || !totalMarks) {
-      return res.status(400).json({ message: 'Please provide title, description, subject, department, due date, and total marks' });
+    if (!title || !description || !subject || !dueDate || !totalMarks) {
+      return res.status(400).json({ message: 'Please provide title, description, subject, due date, and total marks' });
     }
 
     if (Number(totalMarks) < 1) {
       return res.status(400).json({ message: 'Total marks must be at least 1' });
     }
 
+    // AUTOMATIC DEPARTMENT ENFORCEMENT: Faculty's department is automatically enforced from their JWT identity
+    let targetDepartment = department ? department.trim() : req.user.department;
+    if (req.user.role === 'faculty') {
+      targetDepartment = req.user.department;
+    }
+
     const assignment = await Assignment.create({
       title: title.trim(),
       description: description.trim(),
       subject: subject.trim(),
-      department: department.trim(),
+      department: targetDepartment,
+      semester: semester ? Number(semester) : 1,
+      section: section ? section.trim() : '',
       dueDate: new Date(dueDate),
       totalMarks: Number(totalMarks),
       status: status || 'active',
       faculty: req.user._id, // Set automatically from authenticated user
     });
 
+    // Log system activity
+    await logActivity({
+      action: 'ASSIGNMENT_CREATED',
+      performedBy: req.user._id,
+      details: `Created assignment "${assignment.title}" for department "${targetDepartment}" (${assignment.subject})`,
+      targetId: assignment._id,
+      targetType: 'Assignment',
+    });
+
     // Notify all students in the assigned department
-    const departmentStudents = await User.find({ role: 'student', department: department.trim() }).select('_id');
+    const departmentStudents = await User.find({ role: 'student', department: targetDepartment }).select('_id');
     for (const student of departmentStudents) {
       await createNotification({
         recipient: student._id,
         title: 'New Assignment',
-        message: `A new assignment "${title.trim()}" has been posted for your course.`,
+        message: `A new assignment "${title.trim()}" has been posted for your course (${assignment.subject}).`,
         type: 'assignment',
         relatedId: assignment._id,
         relatedType: 'Assignment',
@@ -98,6 +115,7 @@ export const createAssignment = async (req, res, next) => {
       'faculty',
       'name email role department'
     );
+
 
     res.status(201).json(populatedAssignment);
   } catch (error) {

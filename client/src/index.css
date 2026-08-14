@@ -4,14 +4,47 @@
 
 @layer base {
   html {
+    scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
   }
+
+  /* Account for sticky navbar height during smooth section scroll */
+  section[id] {
+    scroll-margin-top: 5.5rem;
+  }
+
   body {
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background-color: #f8fafc;
     color: #0f172a;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Global Premium Button Micro-Interactions */
+@layer components {
+  .btn-premium {
+    @apply transition-all duration-200 ease-out select-none inline-flex items-center justify-center font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed group;
+  }
+  
+  .btn-premium:not(:disabled):hover {
+    transform: translateY(-2px) scale(1.015);
+  }
+
+  .btn-premium:not(:disabled):active {
+    transform: translateY(0px) scale(0.98);
+  }
+
+  /* Right arrow icon shift inside buttons */
+  .btn-premium:hover svg:last-child,
+  .group:hover svg.btn-icon-right,
+  .btn-premium-icon:hover svg {
+    transform: translateX(3px);
+  }
+
+  svg {
+    @apply transition-transform duration-200 ease-out;
   }
 }
 
@@ -33,3 +66,4 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+

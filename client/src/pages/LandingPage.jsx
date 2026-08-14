@@ -35,7 +35,7 @@ const LandingPage = () => {
   return (
     <div className="space-y-16 sm:space-y-20 py-8 select-none">
       
-      {/* 1. HERO SECTION WITH 3D CANVAS BACKGROUND */}
+      {/* 1. HERO SECTION WITH CLEAN AMBIENT BACKGROUND */}
       <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8 pt-8 md:pt-12 overflow-hidden rounded-3xl" id="home">
         <Hero3DCanvas />
         <div className="relative z-10 space-y-8">
@@ -45,50 +45,133 @@ const LandingPage = () => {
             <span>SMART CAMPUS MANAGEMENT PLATFORM</span>
           </div>
 
-        {/* Main Heading */}
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight max-w-4xl mx-auto leading-tight sm:leading-tight md:leading-tight">
-          Smart College Management &{' '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-indigo-600">
-            Collaboration Platform
-          </span>
-        </h1>
+          {/* Main Heading */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight max-w-4xl mx-auto leading-tight sm:leading-tight md:leading-tight">
+            Smart College Management &{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-indigo-600">
+              Collaboration Platform
+            </span>
+          </h1>
 
-        {/* Product Description */}
-        <p className="text-slate-600 text-base sm:text-lg md:text-xl max-w-3xl mx-auto font-normal leading-relaxed">
-          CampusConnect connects Students, Faculty, and Administrators through a unified platform for academic workflows, events, assignments, announcements, complaints, and campus communication.
-        </p>
+          {/* Product Description */}
+          <p className="text-slate-600 text-base sm:text-lg md:text-xl max-w-3xl mx-auto font-normal leading-relaxed">
+            CampusConnect connects Students, Faculty, and Administrators through a unified platform for academic workflows, events, assignments, announcements, complaints, and campus communication.
+          </p>
 
-        {/* Call to Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-          <Link to="/register">
-            <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-brand-500/25 px-8 py-3 text-sm">
-              <span>Get Started</span>
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
-          <Link to="/login">
-            <Button variant="outline" size="lg" className="w-full sm:w-auto px-8 py-3 text-sm border-slate-300 text-slate-700 hover:bg-slate-100">
-              Login to Portal
-            </Button>
-          </Link>
+          {/* Call to Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <Link to="/register">
+              <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-brand-500/25 px-8 py-3 text-sm">
+                <span>Get Started</span>
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+            <Link to="/login">
+              <Button variant="outline" size="lg" className="w-full sm:w-auto px-8 py-3 text-sm border-slate-300 text-slate-700 hover:bg-slate-100">
+                Login to Portal
+              </Button>
+            </Link>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-      {/* 2. WHAT IS CAMPUSCONNECT? (ABOUT SECTION) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" id="about">
-        <div className="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-3xl p-8 sm:p-12 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 transform translate-x-12 -translate-y-12 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative z-10 max-w-3xl space-y-4">
-            <div className="inline-flex items-center space-x-2 text-brand-400 text-xs font-bold uppercase tracking-wider">
-              <Sparkles className="w-4 h-4" />
-              <span>About CampusConnect</span>
+      {/* 2. CORE FEATURES SECTION */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" id="features">
+        <div className="text-center mb-12 space-y-2">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Core Features
+          </h2>
+          <p className="text-slate-500 text-sm max-w-xl mx-auto">
+            Comprehensive tools built specifically to streamline campus management
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Feature 1 */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 hover:border-brand-200 hover:shadow-md transition-all duration-200 hover:-translate-y-1 space-y-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+              <BookOpen className="w-5 h-5" />
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              One Digital Hub for Your Entire Campus
-            </h2>
-            <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-              Managing coursework, event registrations, campus notices, and grievances often involves fragmented systems. CampusConnect integrates these essential tools into a streamlined, role-based platform designed specifically for modern higher education institutions.
+            <h3 className="text-base font-bold text-slate-900">Assignment Management</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Create, assign, submit, and grade coursework with deadline tracking and status indicators.
+            </p>
+          </div>
+
+          {/* Feature 2 */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 hover:border-brand-200 hover:shadow-md transition-all duration-200 hover:-translate-y-1 space-y-3">
+            <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900">Event Management</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Publish campus workshops, academic seminars, and enable single-click student registration.
+            </p>
+          </div>
+
+          {/* Feature 3 */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 hover:border-brand-200 hover:shadow-md transition-all duration-200 hover:-translate-y-1 space-y-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+              <Megaphone className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900">Announcements</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Broadcast urgent campus notices and official department updates to targeted audiences.
+            </p>
+          </div>
+
+          {/* Feature 4 */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 hover:border-brand-200 hover:shadow-md transition-all duration-200 hover:-translate-y-1 space-y-3">
+            <div className="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900">Complaint Management</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Log grievances, assign resolution staff, and monitor status updates until resolution.
+            </p>
+          </div>
+
+          {/* Feature 5 */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 hover:border-brand-200 hover:shadow-md transition-all duration-200 hover:-translate-y-1 space-y-3">
+            <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+              <Bell className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900">Notifications</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Receive real-time alerts for grade updates, new notices, and complaint status changes.
+            </p>
+          </div>
+
+          {/* Feature 6 */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 hover:border-brand-200 hover:shadow-md transition-all duration-200 hover:-translate-y-1 space-y-3">
+            <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Lock className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900">Role-Based Access Control</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Enforce strict data privacy and user permissions across Student, Faculty, and Admin roles.
+            </p>
+          </div>
+
+          {/* Feature 7 */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 hover:border-brand-200 hover:shadow-md transition-all duration-200 hover:-translate-y-1 space-y-3">
+            <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
+              <UserCheck className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900">User Management</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Administrators can manage active accounts, update roles, and audit user permissions.
+            </p>
+          </div>
+
+          {/* Feature 8 */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 hover:border-brand-200 hover:shadow-md transition-all duration-200 hover:-translate-y-1 space-y-3">
+            <div className="w-10 h-10 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900">Admin Analytics</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              High-level overview metrics for campus activity, complaint metrics, and user growth.
             </p>
           </div>
         </div>
@@ -107,7 +190,7 @@ const LandingPage = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Student Role Card */}
-          <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-6">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-1 flex flex-col justify-between space-y-6">
             <div className="space-y-4">
               <div className="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold">
                 <GraduationCap className="w-6 h-6" />
@@ -146,7 +229,7 @@ const LandingPage = () => {
           </div>
 
           {/* Faculty Role Card */}
-          <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-6">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-1 flex flex-col justify-between space-y-6">
             <div className="space-y-4">
               <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
                 <Users className="w-6 h-6" />
@@ -185,7 +268,7 @@ const LandingPage = () => {
           </div>
 
           {/* Admin Role Card */}
-          <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-6">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-1 flex flex-col justify-between space-y-6">
             <div className="space-y-4">
               <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
                 <ShieldCheck className="w-6 h-6" />
@@ -225,109 +308,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* 4. CORE FEATURES SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" id="features">
-        <div className="text-center mb-12 space-y-2">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Core Features
-          </h2>
-          <p className="text-slate-500 text-sm max-w-xl mx-auto">
-            Comprehensive tools built specifically to streamline campus management
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Feature 1 */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 hover:border-brand-200 hover:shadow-md transition-all space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">Assignment Management</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Create, assign, submit, and grade coursework with deadline tracking and status indicators.
-            </p>
-          </div>
-
-          {/* Feature 2 */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 hover:border-brand-200 hover:shadow-md transition-all space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <Calendar className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">Event Management</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Publish campus workshops, academic seminars, and enable single-click student registration.
-            </p>
-          </div>
-
-          {/* Feature 3 */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 hover:border-brand-200 hover:shadow-md transition-all space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Megaphone className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">Announcements</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Broadcast urgent campus notices and official department updates to targeted audiences.
-            </p>
-          </div>
-
-          {/* Feature 4 */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 hover:border-brand-200 hover:shadow-md transition-all space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
-              <AlertCircle className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">Complaint Management</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Log grievances, assign resolution staff, and monitor status updates until resolution.
-            </p>
-          </div>
-
-          {/* Feature 5 */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 hover:border-brand-200 hover:shadow-md transition-all space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
-              <Bell className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">Notifications</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Receive real-time alerts for grade updates, new notices, and complaint status changes.
-            </p>
-          </div>
-
-          {/* Feature 6 */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 hover:border-brand-200 hover:shadow-md transition-all space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <Lock className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">Role-Based Access Control</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Enforce strict data privacy and user permissions across Student, Faculty, and Admin roles.
-            </p>
-          </div>
-
-          {/* Feature 7 */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 hover:border-brand-200 hover:shadow-md transition-all space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
-              <UserCheck className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">User Management</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Administrators can manage active accounts, update roles, and audit user permissions.
-            </p>
-          </div>
-
-          {/* Feature 8 */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 hover:border-brand-200 hover:shadow-md transition-all space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">Admin Analytics</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              High-level overview metrics for campus activity, complaint metrics, and user growth.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. HOW CAMPUSCONNECT WORKS (HOW IT WORKS SECTION) */}
+      {/* 4. HOW CAMPUSCONNECT WORKS (HOW IT WORKS SECTION) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" id="how-it-works">
         <div className="text-center mb-12 space-y-2">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -339,7 +320,7 @@ const LandingPage = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center space-y-4">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center space-y-4 hover:shadow-md transition-all duration-200 hover:-translate-y-1">
             <div className="w-10 h-10 mx-auto rounded-full bg-brand-100 text-brand-700 font-extrabold text-sm flex items-center justify-center">
               1
             </div>
@@ -349,7 +330,7 @@ const LandingPage = () => {
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center space-y-4">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center space-y-4 hover:shadow-md transition-all duration-200 hover:-translate-y-1">
             <div className="w-10 h-10 mx-auto rounded-full bg-brand-100 text-brand-700 font-extrabold text-sm flex items-center justify-center">
               2
             </div>
@@ -359,13 +340,32 @@ const LandingPage = () => {
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center space-y-4">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center space-y-4 hover:shadow-md transition-all duration-200 hover:-translate-y-1">
             <div className="w-10 h-10 mx-auto rounded-full bg-brand-100 text-brand-700 font-extrabold text-sm flex items-center justify-center">
               3
             </div>
             <h3 className="text-lg font-bold text-slate-900">Manage Academic Activities</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
               Get instant notifications for grades and announcements. Administrators monitor complaints and track campus analytics.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. WHAT IS CAMPUSCONNECT? (ABOUT SECTION) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" id="about">
+        <div className="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-3xl p-8 sm:p-12 text-white shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 transform translate-x-12 -translate-y-12 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10 max-w-3xl space-y-4">
+            <div className="inline-flex items-center space-x-2 text-brand-400 text-xs font-bold uppercase tracking-wider">
+              <Sparkles className="w-4 h-4" />
+              <span>About CampusConnect</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              One Digital Hub for Your Entire Campus
+            </h2>
+            <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+              Managing coursework, event registrations, campus notices, and grievances often involves fragmented systems. CampusConnect integrates these essential tools into a streamlined, role-based platform designed specifically for modern higher education institutions.
             </p>
           </div>
         </div>
@@ -383,14 +383,14 @@ const LandingPage = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
             <Link
               to="/register"
-              className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-xl font-bold text-sm text-brand-700 bg-white hover:bg-slate-100 transition-all shadow-lg active:scale-95"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-xl font-bold text-sm text-brand-700 bg-white hover:bg-slate-100 transition-all duration-200 ease-out shadow-lg hover:shadow-xl hover:-translate-y-0.5 hover:scale-[1.015] active:translate-y-0 active:scale-98 group"
             >
               <span>Get Started</span>
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
               to="/login"
-              className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-xl font-semibold text-sm text-white bg-white/10 hover:bg-white/20 border border-white/30 transition-all active:scale-95"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-xl font-semibold text-sm text-white bg-white/10 hover:bg-white/20 border border-white/30 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.015] active:translate-y-0 active:scale-98"
             >
               <span>Login to Portal</span>
             </Link>

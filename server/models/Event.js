@@ -40,6 +40,16 @@ const eventSchema = new mongoose.Schema(
       enum: ['workshop', 'seminar', 'cultural', 'sports', 'academic', 'other'],
       default: 'academic',
     },
+    audienceType: {
+      type: String,
+      enum: ['ALL', 'DEPARTMENT'],
+      default: 'ALL',
+    },
+    department: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     status: {
       type: String,
       enum: ['upcoming', 'ongoing', 'completed', 'cancelled'],

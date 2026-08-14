@@ -19,9 +19,18 @@ const connectDB = async () => {
     uri = uri.replace(/<|>/g, '');
   }
 
+  mongoose.connection.on('disconnected', () => {
+    console.warn('⚠️ [MongoDB Warning]: Connection lost. Mongoose will attempt auto-reconnect.');
+  });
+
+  mongoose.connection.on('error', (err) => {
+    console.error(`⚠️ [MongoDB Connection Event Error]: ${err.message}`);
+  });
+
   try {
     const conn = await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
     });
     console.log(`[MongoDB Connected] Host: ${conn.connection.host}`);
   } catch (error) {
@@ -32,7 +41,7 @@ const connectDB = async () => {
       console.log('🔄 Attempting fallback connection to local MongoDB (mongodb://127.0.0.1:27017/campusconnect)...');
       try {
         const localConn = await mongoose.connect('mongodb://127.0.0.1:27017/campusconnect', {
-          serverSelectionTimeoutMS: 3000,
+          serverSelectionTimeoutMS: 5000,
         });
         console.log(`[MongoDB Connected via Local Fallback] Host: ${localConn.connection.host}`);
         return;

@@ -17,6 +17,10 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import performanceRoutes from './routes/performanceRoutes.js';
+import departmentRoutes from './routes/departmentRoutes.js';
+import activityLogRoutes from './routes/activityLogRoutes.js';
+import academicRoutes from './routes/academicRoutes.js';
+import attendanceRoutes from './routes/attendanceRoutes.js';
 
 dotenv.config();
 
@@ -52,6 +56,11 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/faculty/performance', performanceRoutes);
+app.use('/api/departments', departmentRoutes);
+app.use('/api/admin', activityLogRoutes);
+app.use('/api/academic', academicRoutes);
+app.use('/api/attendance', attendanceRoutes);
+
 
 // Error Handling Middleware
 app.use(notFound);

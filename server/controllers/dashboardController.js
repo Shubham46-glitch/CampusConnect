@@ -14,10 +14,15 @@ export const getStudentDashboardStats = async (req, res, next) => {
     const studentDepartment = req.user.department || 'Computer Science';
     const now = new Date(new Date().setHours(0, 0, 0, 0));
 
-    // 1. Upcoming Events (future or today's date, not cancelled)
+    // 1. Upcoming Events (future or today's date, not cancelled, targeted to ALL or student's department)
     const upcomingEventsCount = await Event.countDocuments({
       status: { $ne: 'cancelled' },
       date: { $gte: now },
+      $or: [
+        { audienceType: 'ALL' },
+        { audienceType: { $exists: false } },
+        { audienceType: 'DEPARTMENT', department: studentDepartment },
+      ],
     });
 
     // 2. Registered Events (student ID in participants array)
@@ -60,23 +65,29 @@ export const getStudentDashboardStats = async (req, res, next) => {
       status: { $in: ['pending', 'in_progress'] },
     });
 
-    // Recent announcements for student
+    // Recent announcements for student (ALL or student department)
     const recentAnnouncements = await Announcement.find({
       status: 'published',
       $or: [
-        { targetAudience: 'all' },
-        { targetAudience: 'students' },
+        { targetAudience: { $in: ['all', 'students', 'ALL'] } },
+        { audienceType: 'ALL' },
         { targetAudience: 'department', department: studentDepartment },
+        { audienceType: 'DEPARTMENT', department: studentDepartment },
       ],
     })
       .sort({ publishedAt: -1, createdAt: -1 })
       .limit(5)
       .populate('publishedBy', 'name role department');
 
-    // Recent upcoming events for student preview
+    // Recent upcoming events for student preview (ALL or student department)
     const upcomingEventsList = await Event.find({
       status: { $ne: 'cancelled' },
       date: { $gte: now },
+      $or: [
+        { audienceType: 'ALL' },
+        { audienceType: { $exists: false } },
+        { audienceType: 'DEPARTMENT', department: studentDepartment },
+      ],
     })
       .sort({ date: 1 })
       .limit(5)

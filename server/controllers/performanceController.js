@@ -32,25 +32,31 @@ export const getStudentPerformance = async (req, res, next) => {
 
     // 2. Fetch students authorized for this faculty/department scope
     let studentQuery = { role: 'student' };
-    if (role === 'faculty' && department) {
-      studentQuery.department = department;
+    if (role === 'faculty') {
+      studentQuery.department = department ? new RegExp(department.trim(), 'i') : 'Computer Science';
+    } else if (role === 'admin' && req.query.department && req.query.department !== 'all') {
+      studentQuery.department = new RegExp(req.query.department.trim(), 'i');
     }
 
     // Optional Search Filter (by student name, email, department, or rollNumber)
     if (req.query.search && req.query.search.trim()) {
       const searchRegex = new RegExp(req.query.search.trim(), 'i');
-      studentQuery.$or = [
+      const searchOr = [
         { name: searchRegex },
         { email: searchRegex },
         { department: searchRegex },
         { 'profileInfo.rollNumber': searchRegex },
       ];
+
+      if (studentQuery.$or) {
+        studentQuery = {
+          $and: [{ role: 'student' }, { $or: studentQuery.$or }, { $or: searchOr }],
+        };
+      } else {
+        studentQuery.$or = searchOr;
+      }
     }
 
-    // Optional Department Filter
-    if (req.query.department && req.query.department !== 'all') {
-      studentQuery.department = req.query.department;
-    }
 
     const students = await User.find(studentQuery).select('-password').sort({ name: 1 });
     const studentIds = students.map((s) => s._id);

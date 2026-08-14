@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Input from '../Input';
 import Button from '../Button';
 import { EVENT_CATEGORIES } from '../../utils/constants';
+import { DEPARTMENTS } from '../../constants/departments';
 
 const EventForm = ({ initialValues = {}, onSubmit, loading, submitText = 'Save Event' }) => {
   const [formData, setFormData] = useState({
@@ -11,6 +12,8 @@ const EventForm = ({ initialValues = {}, onSubmit, loading, submitText = 'Save E
     time: '',
     venue: '',
     category: 'academic',
+    audienceType: 'ALL',
+    department: '',
     capacity: 100,
     status: 'upcoming',
   });
@@ -26,6 +29,8 @@ const EventForm = ({ initialValues = {}, onSubmit, loading, submitText = 'Save E
         time: initialValues.time || '',
         venue: initialValues.venue || '',
         category: initialValues.category || 'academic',
+        audienceType: initialValues.audienceType || 'ALL',
+        department: initialValues.department || '',
         capacity: initialValues.capacity || 100,
         status: initialValues.status || 'upcoming',
       });
@@ -145,20 +150,55 @@ const EventForm = ({ initialValues = {}, onSubmit, loading, submitText = 'Save E
 
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-            Status
+            Audience Scope *
           </label>
           <select
-            name="status"
-            value={formData.status}
+            name="audienceType"
+            value={formData.audienceType || 'ALL'}
             onChange={handleChange}
-            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none capitalize"
+            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none font-semibold text-slate-800"
           >
-            <option value="upcoming">Upcoming</option>
-            <option value="ongoing">Ongoing</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="ALL">College-Wide (All Students & Faculty)</option>
+            <option value="DEPARTMENT">Department Specific</option>
           </select>
         </div>
+      </div>
+
+      {formData.audienceType === 'DEPARTMENT' && (
+        <div className="space-y-1.5 animate-fadeIn">
+          <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+            Target Department *
+          </label>
+          <select
+            name="department"
+            value={formData.department || DEPARTMENTS[0]}
+            onChange={handleChange}
+            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none"
+          >
+            {DEPARTMENTS.map((dept) => (
+              <option key={dept} value={dept}>
+                {dept}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+          Status
+        </label>
+        <select
+          name="status"
+          value={formData.status}
+          onChange={handleChange}
+          className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none capitalize"
+        >
+          <option value="upcoming">Upcoming</option>
+          <option value="ongoing">Ongoing</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
       </div>
 
       <div className="pt-2 flex justify-end">

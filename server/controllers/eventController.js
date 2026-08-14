@@ -1,13 +1,38 @@
 import Event from '../models/Event.js';
 import User from '../models/User.js';
 import { createNotification } from './notificationController.js';
+import { logActivity } from '../utils/activityLogger.js';
 
-// @desc    Get all events
+// @desc    Get all events (filtered by role and audience scope)
 // @route   GET /api/events
 // @access  Private (All authenticated users)
 export const getEvents = async (req, res, next) => {
   try {
-    const events = await Event.find({})
+    const { role, department } = req.user;
+    let query = {};
+
+    if (role === 'student') {
+      // Students see ALL college-wide events OR events targeted specifically to their department
+      query = {
+        $or: [
+          { audienceType: 'ALL' },
+          { audienceType: { $exists: false } },
+          { audienceType: 'DEPARTMENT', department: department },
+        ],
+      };
+    } else if (role === 'faculty') {
+      // Faculty see ALL college-wide events, events in their department, or created by them
+      query = {
+        $or: [
+          { audienceType: 'ALL' },
+          { audienceType: { $exists: false } },
+          { department: department },
+          { createdBy: req.user._id },
+        ],
+      };
+    } // Admin sees all events
+
+    const events = await Event.find(query)
       .populate('createdBy', 'name email role department')
       .populate('participants', 'name email rollNumber department')
       .sort({ date: 1 });
@@ -26,11 +51,21 @@ export const getEventById = async (req, res, next) => {
       .populate('createdBy', 'name email role department profileInfo')
       .populate('participants', 'name email rollNumber department profileInfo');
 
-    if (event) {
-      res.json(event);
-    } else {
-      res.status(404).json({ message: 'Event not found' });
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
     }
+
+    // Role-based audience check
+    if (
+      req.user.role === 'student' &&
+      event.audienceType === 'DEPARTMENT' &&
+      event.department &&
+      event.department !== req.user.department
+    ) {
+      return res.status(403).json({ message: 'Forbidden: You are not authorized to view this department-only event' });
+    }
+
+    res.json(event);
   } catch (error) {
     next(error);
   }
@@ -41,11 +76,17 @@ export const getEventById = async (req, res, next) => {
 // @access  Private (Faculty/Admin)
 export const createEvent = async (req, res, next) => {
   try {
-    const { title, description, date, time, venue, capacity, category, status } = req.body;
+    const { title, description, date, time, venue, capacity, category, audienceType, department, status } = req.body;
 
     // Field presence checks
     if (!title || !description || !date || !time || !venue) {
       return res.status(400).json({ message: 'Please provide all required event details' });
+    }
+
+    const selectedAudience = audienceType || 'ALL';
+    let targetDepartment = '';
+    if (selectedAudience === 'DEPARTMENT') {
+      targetDepartment = req.user.role === 'faculty' ? req.user.department : (department ? department.trim() : req.user.department);
     }
 
     const event = await Event.create({
@@ -56,18 +97,33 @@ export const createEvent = async (req, res, next) => {
       venue: venue.trim(),
       capacity: capacity ? Number(capacity) : 100,
       category: category || 'academic',
+      audienceType: selectedAudience,
+      department: targetDepartment,
       status: status || 'upcoming',
       createdBy: req.user._id, // Set automatically from authenticated user
       participants: [],
     });
 
-    // Notify students about new campus event
-    const students = await User.find({ role: 'student' }).select('_id');
+    // Log system activity
+    await logActivity({
+      action: 'EVENT_CREATED',
+      performedBy: req.user._id,
+      details: `Created ${selectedAudience} event "${event.title}"${targetDepartment ? ` for department "${targetDepartment}"` : ''}`,
+      targetId: event._id,
+      targetType: 'Event',
+    });
+
+    // Notify targeted students
+    let studentFilter = { role: 'student' };
+    if (event.audienceType === 'DEPARTMENT' && event.department) {
+      studentFilter.department = event.department;
+    }
+    const students = await User.find(studentFilter).select('_id');
     for (const student of students) {
       await createNotification({
         recipient: student._id,
         title: 'New Event',
-        message: `A new campus event "${event.title}" has been added.`,
+        message: `A new event "${event.title}" has been added.`,
         type: 'event',
         relatedId: event._id,
         relatedType: 'Event',

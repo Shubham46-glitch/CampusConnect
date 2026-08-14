@@ -23,21 +23,32 @@ const announcementSchema = new mongoose.Schema(
     priority: {
       type: String,
       required: [true, 'Priority is required'],
-      enum: ['low', 'medium', 'high'],
+      enum: ['low', 'medium', 'high', 'urgent'],
       default: 'medium',
     },
     targetAudience: {
       type: String,
       required: [true, 'Target audience is required'],
-      enum: ['all', 'students', 'faculty', 'department'],
+      enum: ['all', 'students', 'faculty', 'department', 'class', 'subject', 'ALL', 'DEPARTMENT', 'CLASS', 'SUBJECT'],
       default: 'all',
+    },
+    audienceType: {
+      type: String,
+      enum: ['ALL', 'DEPARTMENT', 'CLASS', 'SUBJECT'],
+      default: 'ALL',
     },
     department: {
       type: String,
       trim: true,
-      required: function () {
-        return this.targetAudience === 'department';
-      },
+      default: '',
+    },
+    targetClass: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'AcademicClass',
+    },
+    targetSubject: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Subject',
     },
     publishedBy: {
       type: mongoose.Schema.Types.ObjectId,

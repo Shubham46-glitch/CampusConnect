@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Input from '../Input';
 import Button from '../Button';
 
+import { DEPARTMENTS } from '../../constants/departments';
+
 const CATEGORIES = ['academic', 'event', 'examination', 'placement', 'general', 'urgent'];
-const PRIORITIES = ['low', 'medium', 'high'];
+const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 const TARGET_AUDIENCES = ['all', 'students', 'faculty', 'department'];
 
 const AnnouncementForm = ({ initialValues = {}, onSubmit, loading, submitText = 'Publish Announcement' }) => {
@@ -13,7 +15,7 @@ const AnnouncementForm = ({ initialValues = {}, onSubmit, loading, submitText = 
     category: 'general',
     priority: 'medium',
     targetAudience: 'all',
-    department: '',
+    department: DEPARTMENTS[0],
     expiresAt: '',
   });
 
@@ -27,7 +29,7 @@ const AnnouncementForm = ({ initialValues = {}, onSubmit, loading, submitText = 
         category: initialValues.category || 'general',
         priority: initialValues.priority || 'medium',
         targetAudience: initialValues.targetAudience || 'all',
-        department: initialValues.department || '',
+        department: initialValues.department || DEPARTMENTS[0],
         expiresAt: initialValues.expiresAt ? new Date(initialValues.expiresAt).toISOString().split('T')[0] : '',
       });
     }
@@ -144,14 +146,23 @@ const AnnouncementForm = ({ initialValues = {}, onSubmit, loading, submitText = 
         </div>
 
         {formData.targetAudience === 'department' ? (
-          <Input
-            label="Department Name"
-            name="department"
-            placeholder="e.g., Computer Science"
-            value={formData.department}
-            onChange={handleChange}
-            required
-          />
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+              Target Department *
+            </label>
+            <select
+              name="department"
+              value={formData.department}
+              onChange={handleChange}
+              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none"
+            >
+              {DEPARTMENTS.map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
+            </select>
+          </div>
         ) : (
           <Input
             label="Expiration Date (Optional)"

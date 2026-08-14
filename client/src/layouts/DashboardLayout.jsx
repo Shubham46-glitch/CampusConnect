@@ -2,7 +2,6 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
-import CampusAIWidget from '../components/ai/CampusAIWidget';
 
 const DashboardLayout = () => {
   return (
@@ -20,10 +19,9 @@ const DashboardLayout = () => {
           <Outlet />
         </main>
       </div>
-
-      <CampusAIWidget />
     </div>
   );
 };
 
 export default DashboardLayout;
+

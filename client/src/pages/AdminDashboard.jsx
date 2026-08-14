@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Calendar, BookOpen, AlertCircle, Megaphone, ShieldAlert, RefreshCw, Eye } from 'lucide-react';
+import { Users, Calendar, BookOpen, AlertCircle, Megaphone, ShieldAlert, RefreshCw, Eye, Building2 } from 'lucide-react';
+
 import DashboardCard from '../components/DashboardCard';
 import ComplaintOverviewCard from '../components/ComplaintOverviewCard';
 import Table from '../components/Table';
@@ -8,6 +9,8 @@ import Badge from '../components/Badge';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Button from '../components/Button';
 import { getAdminDashboard } from '../services/dashboardService';
+import { getAdminAttendanceAnalytics } from '../services/attendanceService';
+import { getDepartments } from '../services/academicService';
 import useAuth from '../hooks/useAuth';
 
 const getGreeting = () => {
@@ -20,6 +23,8 @@ const getGreeting = () => {
 const AdminDashboard = () => {
   const { user } = useAuth();
   const [data, setData] = useState(null);
+  const [attendanceData, setAttendanceData] = useState(null);
+  const [departmentCount, setDepartmentCount] = useState(4);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -27,8 +32,14 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      const stats = await getAdminDashboard();
+      const [stats, attStats, depts] = await Promise.all([
+        getAdminDashboard(),
+        getAdminAttendanceAnalytics().catch(() => null),
+        getDepartments().catch(() => []),
+      ]);
       setData(stats);
+      setAttendanceData(attStats);
+      if (depts && depts.length > 0) setDepartmentCount(depts.length);
     } catch (err) {
       console.error('Error fetching admin dashboard data', err);
       setError(err.response?.data?.message || 'Failed to load admin dashboard statistics');
@@ -77,6 +88,8 @@ const AdminDashboard = () => {
     recentComplaints = [],
   } = data || {};
 
+  const overallAttendancePct = attendanceData?.overallPercentage || 0;
+
   return (
     <div className="space-y-6">
       {/* Header Introduction */}
@@ -88,39 +101,52 @@ const AdminDashboard = () => {
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchAdminData}
-          className="self-start sm:self-center"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Refresh</span>
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Link to="/admin/attendance-analytics">
+            <Button variant="primary" size="sm">
+              <Building2 className="w-4 h-4 mr-1" /> Attendance Analytics
+            </Button>
+          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchAdminData}
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Refresh</span>
+          </Button>
+        </div>
       </div>
 
-      {/* 4 Metric Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      {/* 5 Metric Cards Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <DashboardCard
           title="Total Users"
           value={totalUsers}
           icon={Users}
           color="brand"
-          indicator={`${totalStudents} Student • ${totalFaculty} Faculty • ${Math.max(0, totalUsers - totalStudents - totalFaculty)} Admin`}
+          indicator={`${totalStudents} Student • ${totalFaculty} Faculty`}
+        />
+        <DashboardCard
+          title="Academic Departments"
+          value={departmentCount}
+          icon={Building2}
+          color="indigo"
+          indicator="Database departments"
+        />
+        <DashboardCard
+          title="Overall Attendance"
+          value={`${overallAttendancePct}%`}
+          icon={Building2}
+          color="emerald"
+          indicator="Institution-wide average"
         />
         <DashboardCard
           title="Total Events"
           value={totalEvents}
           icon={Calendar}
-          color="emerald"
+          color="amber"
           indicator="Campus activities"
-        />
-        <DashboardCard
-          title="Active Assignments"
-          value={totalAssignments}
-          icon={BookOpen}
-          color="indigo"
-          indicator="Coursework assigned"
         />
         <DashboardCard
           title="Total Complaints"

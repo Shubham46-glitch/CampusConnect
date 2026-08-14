@@ -20,6 +20,8 @@ const formatTimeAgo = (dateString) => {
 
 const getTypeIcon = (type) => {
   switch (type) {
+    case 'attendance':
+      return <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />;
     case 'event':
       return <Calendar className="w-3.5 h-3.5 text-brand-600" />;
     case 'assignment':

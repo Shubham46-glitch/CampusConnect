@@ -1,6 +1,7 @@
 import Announcement from '../models/Announcement.js';
 import User from '../models/User.js';
 import { createNotification } from './notificationController.js';
+import { logActivity } from '../utils/activityLogger.js';
 
 // @desc    Get announcements for authenticated user based on role, department, and expiration
 // @route   GET /api/announcements
@@ -16,21 +17,26 @@ export const getAnnouncements = async (req, res, next) => {
     const { role, department } = req.user;
     const includeExpired = req.query.includeExpired === 'true';
 
-    // 2. Build role-based visibility query
+    // 2. Build role-based visibility query (Priority DOES NOT change visibility scope)
     let visibilityQuery = {};
 
     if (role === 'student') {
       visibilityQuery = {
         $or: [
-          { targetAudience: { $in: ['all', 'students'] } },
+          { targetAudience: { $in: ['all', 'students', 'ALL'] } },
+          { audienceType: 'ALL' },
           { targetAudience: 'department', department: department },
+          { audienceType: 'DEPARTMENT', department: department },
         ],
       };
     } else if (role === 'faculty') {
       visibilityQuery = {
         $or: [
-          { targetAudience: { $in: ['all', 'faculty'] } },
+          { targetAudience: { $in: ['all', 'faculty', 'ALL'] } },
+          { audienceType: 'ALL' },
           { targetAudience: 'department', department: department },
+          { audienceType: 'DEPARTMENT', department: department },
+          { publishedBy: req.user._id },
         ],
       };
     } // Admin sees all announcements by default
@@ -68,11 +74,11 @@ export const getAnnouncementById = async (req, res, next) => {
     const isAdmin = role === 'admin';
 
     if (!isCreator && !isAdmin) {
-      if (role === 'student' && !['all', 'students'].includes(announcement.targetAudience) && announcement.department !== department) {
-        return res.status(403).json({ message: 'Forbidden: You are not authorized to view this announcement' });
-      }
-      if (role === 'faculty' && !['all', 'faculty'].includes(announcement.targetAudience) && announcement.department !== department) {
-        return res.status(403).json({ message: 'Forbidden: You are not authorized to view this announcement' });
+      const isCollegeWide = ['all', 'students', 'faculty', 'ALL'].includes(announcement.targetAudience) || announcement.audienceType === 'ALL';
+      const isMyDepartment = announcement.department === department;
+
+      if (!isCollegeWide && !isMyDepartment) {
+        return res.status(403).json({ message: 'Forbidden: You are not authorized to view this department-specific announcement' });
       }
     }
 
@@ -87,14 +93,17 @@ export const getAnnouncementById = async (req, res, next) => {
 // @access  Private (Faculty/Admin)
 export const createAnnouncement = async (req, res, next) => {
   try {
-    const { title, content, category, priority, targetAudience, department, expiresAt, status } = req.body;
+    const { title, content, category, priority, targetAudience, audienceType, department, expiresAt, status } = req.body;
 
     if (!title || !content) {
       return res.status(400).json({ message: 'Please provide announcement title and content' });
     }
 
-    if (targetAudience === 'department' && !department) {
-      return res.status(400).json({ message: 'Department is required when target audience is set to department' });
+    const selectedAudience = targetAudience || (audienceType === 'DEPARTMENT' ? 'department' : 'all');
+    let targetDepartment = '';
+
+    if (selectedAudience === 'department' || audienceType === 'DEPARTMENT') {
+      targetDepartment = req.user.role === 'faculty' ? req.user.department : (department ? department.trim() : req.user.department);
     }
 
     const announcement = await Announcement.create({
@@ -102,13 +111,24 @@ export const createAnnouncement = async (req, res, next) => {
       content: content.trim(),
       category: category || 'general',
       priority: priority || 'medium',
-      targetAudience: targetAudience || 'all',
-      department: targetAudience === 'department' ? department.trim() : (department || ''),
+      targetAudience: selectedAudience,
+      audienceType: audienceType || (selectedAudience === 'department' ? 'DEPARTMENT' : 'ALL'),
+      department: targetDepartment,
       publishedBy: req.user._id, // Set automatically from authenticated user
       publishedAt: new Date(),
       expiresAt: expiresAt ? new Date(expiresAt) : undefined,
       status: status || 'published',
     });
+
+    // Log system activity
+    await logActivity({
+      action: 'ANNOUNCEMENT_PUBLISHED',
+      performedBy: req.user._id,
+      details: `Published ${selectedAudience} announcement "${announcement.title}"${targetDepartment ? ` for department "${targetDepartment}"` : ''}`,
+      targetId: announcement._id,
+      targetType: 'Announcement',
+    });
+
 
     // Notify target audience
     let targetUsers = [];
