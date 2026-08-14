@@ -10,7 +10,7 @@ try {
 }
 
 const connectDB = async () => {
-  let uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/campusconnect';
+  let uri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/campusconnect';
 
   // Clean up angle brackets if present in environment variable
   if (uri.includes('<') || uri.includes('>')) {
