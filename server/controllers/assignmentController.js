@@ -2,6 +2,7 @@ import Assignment from '../models/Assignment.js';
 import Submission from '../models/Submission.js';
 import User from '../models/User.js';
 import { createNotification } from './notificationController.js';
+import { logActivity } from '../utils/activityLogger.js';
 
 // @desc    Get assignments for authenticated user (Role/Department filtered)
 // @route   GET /api/assignments
