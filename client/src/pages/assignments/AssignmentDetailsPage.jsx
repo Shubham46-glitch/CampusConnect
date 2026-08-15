@@ -210,46 +210,67 @@ const AssignmentDetailsPage = () => {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                  <span>Your Submitted Work</span>
+                  <span>Your Active Submission</span>
                 </h3>
-                <AssignmentStatusBadge status={submission.status} />
+                <AssignmentStatusBadge status={submission.status === 'graded' ? 'evaluated' : submission.status} />
               </div>
 
-              <div className="space-y-2 text-xs">
+              <div className="space-y-3 text-xs">
                 <p className="text-slate-500">
-                  Submitted on: <strong>{new Date(submission.submittedAt).toLocaleString()}</strong>
+                  Submitted on: <strong className="text-slate-800">{new Date(submission.submittedAt).toLocaleString()}</strong>
                 </p>
 
-                <div className="p-3 bg-slate-50 rounded-xl font-mono text-slate-800 border border-slate-200 whitespace-pre-line">
-                  {submission.content}
-                </div>
+                {submission.content && (
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Submission Comment</span>
+                    <div className="p-3 bg-slate-50 rounded-xl text-slate-800 border border-slate-200 leading-relaxed">
+                      {submission.content}
+                    </div>
+                  </div>
+                )}
 
-                {submission.fileUrl && (
-                  <a
-                    href={submission.fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center space-x-1.5 text-brand-600 hover:underline font-semibold"
-                  >
-                    <span>View Project Artifact Link</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
+                {(submission.fileUrl || submission.fileName) && (
+                  <div className="p-3 bg-brand-50/60 border border-brand-200/80 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center space-x-2 overflow-hidden">
+                      <FileText className="w-4 h-4 text-brand-600 shrink-0" />
+                      <span className="font-bold text-slate-800 truncate">{submission.fileName || 'Submitted_Academic_File'}</span>
+                    </div>
+                    {submission.fileUrl && (
+                      <a
+                        href={submission.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1 bg-white border border-brand-200 hover:bg-brand-50 text-brand-700 text-xs font-bold rounded-lg transition-colors inline-flex items-center space-x-1 shrink-0"
+                      >
+                        <span>View / Download</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
                 )}
               </div>
 
               {/* Evaluation / Grade Display */}
-              {submission.status === 'graded' && (
-                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">Faculty Grade & Assessment</span>
-                    <span className="text-lg font-black text-emerald-900">
+              {(submission.status === 'graded' || submission.status === 'evaluated') && (
+                <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2">
+                  <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-800 flex items-center space-x-1.5">
+                      <Award className="w-4 h-4 text-emerald-600" />
+                      <span>Faculty Assessment & Marks</span>
+                    </span>
+                    <span className="text-xl font-black text-emerald-900 bg-white px-3 py-0.5 rounded-lg border border-emerald-300">
                       {submission.marks} / {assignment.totalMarks}
                     </span>
                   </div>
-                  {submission.feedback && (
-                    <p className="text-xs text-emerald-800 italic">
-                      "{submission.feedback}"
-                    </p>
+                  {submission.feedback ? (
+                    <div className="pt-1">
+                      <span className="text-[10px] uppercase font-bold text-emerald-700 block mb-1">Faculty Feedback:</span>
+                      <p className="text-xs text-emerald-900 italic font-medium leading-relaxed bg-white/70 p-3 rounded-xl border border-emerald-200/60">
+                        "{submission.feedback}"
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-emerald-700 italic">No written feedback provided.</p>
                   )}
                 </div>
               )}

@@ -18,7 +18,12 @@ const submissionSchema = new mongoose.Schema(
     },
     content: {
       type: String,
-      required: [true, 'Submission content is required'],
+      default: '',
+      trim: true,
+    },
+    fileName: {
+      type: String,
+      default: '',
       trim: true,
     },
     fileUrl: {
@@ -28,7 +33,7 @@ const submissionSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['submitted', 'graded', 'late'],
+      enum: ['submitted', 'graded', 'evaluated', 'late'],
       default: 'submitted',
     },
     marks: {

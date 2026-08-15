@@ -29,6 +29,7 @@ const Sidebar = () => {
       { name: 'Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
       { name: 'Attendance', path: '/student/attendance', icon: CheckSquare },
       { name: 'Assignments', path: '/assignments', icon: BookOpen },
+      { name: 'My Submissions', path: '/student/submissions', icon: FileText },
       { name: 'Events', path: '/events', icon: Calendar },
       { name: 'Announcements', path: '/announcements', icon: Megaphone },
       { name: 'Complaints', path: '/complaints', icon: AlertCircle },

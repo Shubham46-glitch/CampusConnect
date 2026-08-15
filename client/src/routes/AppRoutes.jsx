@@ -37,6 +37,7 @@ import AssignmentDetailsPage from '../pages/assignments/AssignmentDetailsPage';
 import CreateAssignmentPage from '../pages/assignments/CreateAssignmentPage';
 import EditAssignmentPage from '../pages/assignments/EditAssignmentPage';
 import AssignmentSubmissionsPage from '../pages/assignments/AssignmentSubmissionsPage';
+import StudentSubmissionsPage from '../pages/student/StudentSubmissionsPage';
 
 // Complaints Pages
 import ComplaintsPage from '../pages/complaints/ComplaintsPage';
@@ -123,6 +124,7 @@ const AppRoutes = () => {
           <Route path="/student/events" element={<EventsPage />} />
           <Route path="/student/announcements" element={<AnnouncementsPage />} />
           <Route path="/student/assignments" element={<AssignmentsPage />} />
+          <Route path="/student/submissions" element={<StudentSubmissionsPage />} />
           <Route path="/student/complaints" element={<ComplaintsPage />} />
           <Route path="/complaints" element={<ComplaintsPage />} />
           <Route path="/complaints/create" element={<CreateComplaintPage />} />
