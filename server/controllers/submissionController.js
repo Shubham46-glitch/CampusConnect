@@ -198,12 +198,19 @@ export const getAssignmentSubmissions = async (req, res, next) => {
       department: assignment.department,
     }).select('name email department profileInfo status');
 
-    // Fetch student enrollments for roll numbers
-    const enrollments = await StudentEnrollment.find({ department: assignment.department }).select('student rollNumber');
+    // Fetch student enrollments for roll numbers safely
     const rollMap = new Map();
-    enrollments.forEach((e) => {
-      if (e.student) rollMap.set(e.student.toString(), e.rollNumber);
-    });
+    try {
+      const studentIds = allDeptStudents.map((st) => st._id);
+      if (studentIds.length > 0) {
+        const enrollments = await StudentEnrollment.find({ student: { $in: studentIds } }).select('student rollNumber');
+        enrollments.forEach((e) => {
+          if (e.student) rollMap.set(e.student.toString(), e.rollNumber);
+        });
+      }
+    } catch (e) {
+      console.warn('[SubmissionController] Enrollment lookup notice:', e.message);
+    }
 
     // Fetch existing submissions for this assignment
     const submissions = await Submission.find({ assignment: assignment._id })
