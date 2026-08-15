@@ -25,11 +25,7 @@ export const uploadSubmissionFile = async (fileObj, fileData = '') => {
   if (fileObj && typeof fileObj === 'object' && fileObj.name) {
     const formData = new FormData();
     formData.append('file', fileObj);
-    const response = await API.post('/submissions/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await API.post('/submissions/upload', formData);
     return response.data;
   }
   // Fallback to base64 JSON payload

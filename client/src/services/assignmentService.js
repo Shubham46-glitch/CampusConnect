@@ -27,11 +27,7 @@ export const deleteAssignment = async (id) => {
 
 export const submitAssignment = async (id, submissionData) => {
   if (submissionData instanceof FormData) {
-    const response = await API.post(`/assignments/${id}/submit`, submissionData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await API.post(`/assignments/${id}/submit`, submissionData);
     return response.data;
   }
   const response = await API.post(`/assignments/${id}/submit`, submissionData);
