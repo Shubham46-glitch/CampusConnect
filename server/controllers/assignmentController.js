@@ -1,10 +1,11 @@
 import Assignment from '../models/Assignment.js';
 import Submission from '../models/Submission.js';
 import User from '../models/User.js';
+import StudentEnrollment from '../models/StudentEnrollment.js';
 import { createNotification } from './notificationController.js';
 import { logActivity } from '../utils/activityLogger.js';
 
-// @desc    Get assignments for authenticated user (Role/Department filtered)
+// @desc    Get assignments for authenticated user (Role/Department filtered & Division/Section matched)
 // @route   GET /api/assignments
 // @access  Private (All authenticated users)
 export const getAssignments = async (req, res, next) => {
@@ -13,7 +14,42 @@ export const getAssignments = async (req, res, next) => {
     let query = {};
 
     if (role === 'student') {
-      query = { department: department };
+      // Find the student's active academic class / division enrollment
+      const enrollment = await StudentEnrollment.findOne({ student: req.user._id, status: 'active' }).populate('academicClass');
+      const studentClassName = enrollment?.academicClass?.name || '';
+      const studentSection = req.user.profileInfo?.section || '';
+
+      const allowedSections = ['', 'all', 'All', 'All Divisions', 'all divisions'];
+      if (studentClassName) allowedSections.push(studentClassName);
+      if (studentSection) allowedSections.push(studentSection);
+
+      // Generate flexible division tokens (e.g., "Div 1", "Div 2", "IT-D1", "IT-D2")
+      const divisionRegexes = [];
+      const combinedDivString = `${studentClassName} ${studentSection}`;
+      if (/D1|Div 1|Division 1|\b1\b|\bA\b|Sec A|Section A/i.test(combinedDivString)) {
+        allowedSections.push('Div 1', 'Division 1', 'D1', 'Section A');
+        divisionRegexes.push(/1|d1|div 1|division 1|sec a|section a/i);
+      }
+      if (/D2|Div 2|Division 2|\b2\b|\bB\b|Sec B|Section B/i.test(combinedDivString)) {
+        allowedSections.push('Div 2', 'Division 2', 'D2', 'Section B');
+        divisionRegexes.push(/2|d2|div 2|division 2|sec b|section b/i);
+      }
+
+      const orConditions = [
+        { section: { $in: allowedSections } },
+        { section: '' },
+        { section: null },
+        { section: { $exists: false } },
+      ];
+
+      for (const rx of divisionRegexes) {
+        orConditions.push({ section: { $regex: rx } });
+      }
+
+      query = {
+        department: department,
+        $or: orConditions,
+      };
     } else if (role === 'faculty') {
       query = {
         $or: [
@@ -77,13 +113,15 @@ export const createAssignment = async (req, res, next) => {
       targetDepartment = req.user.department;
     }
 
+    const targetSection = section ? section.trim() : 'All Divisions';
+
     const assignment = await Assignment.create({
       title: title.trim(),
       description: description.trim(),
       subject: subject.trim(),
       department: targetDepartment,
       semester: semester ? Number(semester) : 1,
-      section: section ? section.trim() : '',
+      section: targetSection,
       dueDate: new Date(dueDate),
       totalMarks: Number(totalMarks),
       status: status || 'active',
@@ -94,7 +132,7 @@ export const createAssignment = async (req, res, next) => {
     await logActivity({
       action: 'ASSIGNMENT_CREATED',
       performedBy: req.user._id,
-      details: `Created assignment "${assignment.title}" for department "${targetDepartment}" (${assignment.subject})`,
+      details: `Created assignment "${assignment.title}" for department "${targetDepartment}", division "${targetSection}" (${assignment.subject})`,
       targetId: assignment._id,
       targetType: 'Assignment',
     });
@@ -105,7 +143,7 @@ export const createAssignment = async (req, res, next) => {
       await createNotification({
         recipient: student._id,
         title: 'New Assignment',
-        message: `A new assignment "${title.trim()}" has been posted for your course (${assignment.subject}).`,
+        message: `A new assignment "${title.trim()}" (${targetSection}) has been posted for your course (${assignment.subject}).`,
         type: 'assignment',
         relatedId: assignment._id,
         relatedType: 'Assignment',
@@ -116,7 +154,6 @@ export const createAssignment = async (req, res, next) => {
       'faculty',
       'name email role department'
     );
-
 
     res.status(201).json(populatedAssignment);
   } catch (error) {
@@ -149,6 +186,7 @@ export const updateAssignment = async (req, res, next) => {
     assignment.description = req.body.description ? req.body.description.trim() : assignment.description;
     assignment.subject = req.body.subject ? req.body.subject.trim() : assignment.subject;
     assignment.department = req.body.department ? req.body.department.trim() : assignment.department;
+    assignment.section = req.body.section ? req.body.section.trim() : assignment.section;
     assignment.dueDate = req.body.dueDate ? new Date(req.body.dueDate) : assignment.dueDate;
     assignment.totalMarks = req.body.totalMarks !== undefined ? Number(req.body.totalMarks) : assignment.totalMarks;
     assignment.status = req.body.status || assignment.status;

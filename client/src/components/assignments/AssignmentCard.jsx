@@ -17,9 +17,20 @@ const AssignmentCard = ({ assignment }) => {
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden">
       <div className="p-5 flex-1 space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[10px] uppercase tracking-wider font-bold text-brand-600 bg-brand-50 px-2.5 py-1 rounded-md">
-            {assignment.subject}
-          </span>
+          <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
+            <span className="text-[10px] uppercase tracking-wider font-bold text-brand-600 bg-brand-50 px-2.5 py-1 rounded-md">
+              {assignment.subject}
+            </span>
+            {assignment.section && assignment.section !== 'All Divisions' && assignment.section !== 'All' ? (
+              <span className="text-[10px] uppercase tracking-wider font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md">
+                {assignment.section}
+              </span>
+            ) : (
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                All Divisions
+              </span>
+            )}
+          </div>
           <AssignmentStatusBadge status={isOverdue && assignment.status === 'active' ? 'closed' : assignment.status} />
         </div>
 

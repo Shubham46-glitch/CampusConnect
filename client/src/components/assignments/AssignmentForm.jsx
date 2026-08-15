@@ -15,6 +15,7 @@ const AssignmentForm = ({ initialValues = {}, onSubmit, loading, submitText = 'P
     description: '',
     subject: '',
     department: isFaculty ? user.department : DEPARTMENTS[0],
+    section: 'All Divisions',
     dueDate: '',
     totalMarks: 100,
     status: 'active',
@@ -29,6 +30,7 @@ const AssignmentForm = ({ initialValues = {}, onSubmit, loading, submitText = 'P
         description: initialValues.description || '',
         subject: initialValues.subject || '',
         department: isFaculty ? user?.department : initialValues.department || DEPARTMENTS[0],
+        section: initialValues.section || 'All Divisions',
         dueDate: initialValues.dueDate ? new Date(initialValues.dueDate).toISOString().split('T')[0] : '',
         totalMarks: initialValues.totalMarks !== undefined ? initialValues.totalMarks : 100,
         status: initialValues.status || 'active',
@@ -58,7 +60,7 @@ const AssignmentForm = ({ initialValues = {}, onSubmit, loading, submitText = 'P
       return;
     }
 
-    onSubmit({ ...formData, department: targetDept });
+    onSubmit({ ...formData, department: targetDept, section: formData.section || 'All Divisions' });
   };
 
 
@@ -93,7 +95,7 @@ const AssignmentForm = ({ initialValues = {}, onSubmit, loading, submitText = 'P
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Input
           label="Subject / Course"
           name="subject"
@@ -116,12 +118,31 @@ const AssignmentForm = ({ initialValues = {}, onSubmit, loading, submitText = 'P
               isFaculty ? 'bg-slate-100 border-slate-200 text-slate-600 cursor-not-allowed font-semibold' : 'bg-white border-slate-300'
             }`}
           >
-
             {DEPARTMENTS.map((dept) => (
               <option key={dept} value={dept}>
                 {dept}
               </option>
             ))}
+          </select>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+            Target Division / Section *
+          </label>
+          <select
+            name="section"
+            value={formData.section || 'All Divisions'}
+            onChange={handleChange}
+            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium text-slate-900"
+          >
+            <option value="All Divisions">All Divisions (Entire Dept)</option>
+            <option value="Div 1">Div 1 (Division 1)</option>
+            <option value="Div 2">Div 2 (Division 2)</option>
+            <option value="Div 3">Div 3 (Division 3)</option>
+            <option value="Div 4">Div 4 (Division 4)</option>
+            <option value="Section A">Section A</option>
+            <option value="Section B">Section B</option>
           </select>
         </div>
       </div>

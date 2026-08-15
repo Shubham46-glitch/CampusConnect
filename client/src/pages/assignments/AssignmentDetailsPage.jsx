@@ -144,10 +144,19 @@ const AssignmentDetailsPage = () => {
       <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
           <div>
-            <div className="flex items-center space-x-3 mb-2">
+            <div className="flex items-center space-x-3 mb-2 flex-wrap gap-y-1">
               <span className="text-xs uppercase font-bold tracking-wider text-brand-600 bg-brand-50 px-3 py-1 rounded-md">
                 {assignment.subject}
               </span>
+              {assignment.section && assignment.section !== 'All Divisions' && assignment.section !== 'All' ? (
+                <span className="text-xs uppercase font-bold tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-md">
+                  {assignment.section}
+                </span>
+              ) : (
+                <span className="text-xs uppercase font-semibold tracking-wider text-slate-500 bg-slate-100 px-3 py-1 rounded-md">
+                  All Divisions
+                </span>
+              )}
               <AssignmentStatusBadge status={isOverdue && assignment.status === 'active' ? 'closed' : assignment.status} />
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">{assignment.title}</h1>
