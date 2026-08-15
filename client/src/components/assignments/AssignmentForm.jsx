@@ -3,6 +3,7 @@ import Input from '../Input';
 import Button from '../Button';
 import { DEPARTMENTS } from '../../constants/departments';
 import useAuth from '../../hooks/useAuth';
+import { getFacultyDepartmentClasses } from '../../services/academicService';
 
 const STATUS_OPTIONS = ['active', 'closed', 'archived'];
 
@@ -21,10 +22,25 @@ const AssignmentForm = ({ initialValues = {}, onSubmit, loading, submitText = 'P
     status: 'active',
   });
 
+  const [academicClasses, setAcademicClasses] = useState([]);
+  const [selectedClassId, setSelectedClassId] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const targetDept = isFaculty ? user?.department : formData.department;
+    if (targetDept) {
+      getFacultyDepartmentClasses({ department: targetDept })
+        .then((res) => {
+          if (Array.isArray(res)) setAcademicClasses(res);
+        })
+        .catch((err) => console.error('Failed to load academic classes for department:', err));
+    }
+  }, [formData.department, isFaculty, user]);
+
+  useEffect(() => {
     if (initialValues && Object.keys(initialValues).length > 0) {
+      const classIdVal = initialValues.academicClass?._id || initialValues.academicClass || '';
+      setSelectedClassId(classIdVal);
       setFormData({
         title: initialValues.title || '',
         description: initialValues.description || '',
@@ -44,6 +60,23 @@ const AssignmentForm = ({ initialValues = {}, onSubmit, loading, submitText = 'P
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleSectionChange = (e) => {
+    const val = e.target.value;
+    if (val === 'All Divisions') {
+      setSelectedClassId('');
+      setFormData((prev) => ({ ...prev, section: 'All Divisions' }));
+    } else {
+      const foundClass = academicClasses.find((c) => c._id === val || c.name === val);
+      if (foundClass) {
+        setSelectedClassId(foundClass._id);
+        setFormData((prev) => ({ ...prev, section: foundClass.name }));
+      } else {
+        setSelectedClassId('');
+        setFormData((prev) => ({ ...prev, section: val }));
+      }
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
@@ -60,9 +93,13 @@ const AssignmentForm = ({ initialValues = {}, onSubmit, loading, submitText = 'P
       return;
     }
 
-    onSubmit({ ...formData, department: targetDept, section: formData.section || 'All Divisions' });
+    onSubmit({
+      ...formData,
+      department: targetDept,
+      section: formData.section || 'All Divisions',
+      academicClass: selectedClassId || null,
+    });
   };
-
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
@@ -88,6 +125,7 @@ const AssignmentForm = ({ initialValues = {}, onSubmit, loading, submitText = 'P
         <textarea
           name="description"
           rows={5}
+          className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none"
           placeholder="Detailed problem statement and submission instructions..."
           value={formData.description}
           onChange={handleChange}
@@ -132,13 +170,22 @@ const AssignmentForm = ({ initialValues = {}, onSubmit, loading, submitText = 'P
           </label>
           <select
             name="section"
-            value={formData.section || 'All Divisions'}
-            onChange={handleChange}
+            value={selectedClassId || formData.section || 'All Divisions'}
+            onChange={handleSectionChange}
             className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium text-slate-900"
           >
             <option value="All Divisions">All Divisions (Entire Dept)</option>
-            <option value="Division 1">Division 1</option>
-            <option value="Division 2">Division 2</option>
+            {academicClasses.map((ac) => (
+              <option key={ac._id} value={ac._id}>
+                {ac.name} ({ac.year || 'Academic Class'})
+              </option>
+            ))}
+            {academicClasses.length === 0 && (
+              <>
+                <option value="Division 1">Division 1</option>
+                <option value="Division 2">Division 2</option>
+              </>
+            )}
           </select>
         </div>
       </div>

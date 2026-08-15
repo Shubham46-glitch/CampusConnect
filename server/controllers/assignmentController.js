@@ -16,6 +16,7 @@ export const getAssignments = async (req, res, next) => {
     if (role === 'student') {
       // Find the student's active academic class / division enrollment
       const enrollment = await StudentEnrollment.findOne({ student: req.user._id, status: 'active' }).populate('academicClass');
+      const studentClassId = enrollment?.academicClass?._id;
       const studentClassName = enrollment?.academicClass?.name || '';
       const studentSection = req.user.profileInfo?.section || '';
 
@@ -23,17 +24,13 @@ export const getAssignments = async (req, res, next) => {
       if (studentClassName) allowedSections.push(studentClassName);
       if (studentSection) allowedSections.push(studentSection);
 
-      // Generate flexible division tokens (e.g., "Div 1", "Div 2", "IT-D1", "IT-D2")
-      const divisionRegexes = [];
-      const combinedDivString = `${studentClassName} ${studentSection}`;
-      if (/D1|Div 1|Division 1|\b1\b|\bA\b|Sec A|Section A/i.test(combinedDivString)) {
-        allowedSections.push('Div 1', 'Division 1', 'D1', 'Section A');
-        divisionRegexes.push(/1|d1|div 1|division 1|sec a|section a/i);
-      }
-      if (/D2|Div 2|Division 2|\b2\b|\bB\b|Sec B|Section B/i.test(combinedDivString)) {
-        allowedSections.push('Div 2', 'Division 2', 'D2', 'Section B');
-        divisionRegexes.push(/2|d2|div 2|division 2|sec b|section b/i);
-      }
+      // Clean string to remove generic year/semester terms that contain numbers (e.g., "Second Year", "Year 2", "Sem 2")
+      const cleanClassStr = `${studentClassName} ${studentSection}`
+        .replace(/first year|second year|third year|fourth year|1st year|2nd year|3rd year|4th year|year \d|sem \d|semester \d/gi, '');
+
+      // Check if student is strictly D1 or D2 division
+      const isD1 = /D1|Div 1|Division 1|\bSec A\b|\bSection A\b/i.test(cleanClassStr);
+      const isD2 = /D2|Div 2|Division 2|\bSec B\b|\bSection B\b/i.test(cleanClassStr);
 
       const orConditions = [
         { section: { $in: allowedSections } },
@@ -42,8 +39,19 @@ export const getAssignments = async (req, res, next) => {
         { section: { $exists: false } },
       ];
 
-      for (const rx of divisionRegexes) {
-        orConditions.push({ section: { $regex: rx } });
+      if (studentClassId) {
+        orConditions.push({ academicClass: studentClassId });
+      }
+
+      if (isD1 && !isD2) {
+        allowedSections.push('Div 1', 'Division 1', 'D1', 'Section A', 'SEC A', 'SEC-A');
+        orConditions.push({ section: { $regex: /d1|div 1|division 1|sec a|section a/i } });
+      } else if (isD2 && !isD1) {
+        allowedSections.push('Div 2', 'Division 2', 'D2', 'Section B', 'SEC B', 'SEC-B');
+        orConditions.push({ section: { $regex: /d2|div 2|division 2|sec b|section b/i } });
+      } else if (isD1 && isD2) {
+        allowedSections.push('Div 1', 'Division 1', 'D1', 'Section A', 'Div 2', 'Division 2', 'D2', 'Section B');
+        orConditions.push({ section: { $regex: /d1|d2|div 1|div 2|division 1|division 2/i } });
       }
 
       query = {
@@ -61,6 +69,7 @@ export const getAssignments = async (req, res, next) => {
 
     const assignments = await Assignment.find(query)
       .populate('faculty', 'name email role department')
+      .populate('academicClass', 'name year semester')
       .sort({ dueDate: 1 });
 
     res.json(assignments);
@@ -75,7 +84,8 @@ export const getAssignments = async (req, res, next) => {
 export const getAssignmentById = async (req, res, next) => {
   try {
     const assignment = await Assignment.findById(req.params.id)
-      .populate('faculty', 'name email role department profileInfo');
+      .populate('faculty', 'name email role department profileInfo')
+      .populate('academicClass', 'name year semester');
 
     if (!assignment) {
       return res.status(404).json({ message: 'Assignment not found' });
@@ -97,7 +107,7 @@ export const getAssignmentById = async (req, res, next) => {
 // @access  Private (Faculty/Admin)
 export const createAssignment = async (req, res, next) => {
   try {
-    const { title, description, subject, department, semester, section, dueDate, totalMarks, status } = req.body;
+    const { title, description, subject, academicClass, department, semester, section, dueDate, totalMarks, status } = req.body;
 
     if (!title || !description || !subject || !dueDate || !totalMarks) {
       return res.status(400).json({ message: 'Please provide title, description, subject, due date, and total marks' });
@@ -115,7 +125,7 @@ export const createAssignment = async (req, res, next) => {
 
     const targetSection = section ? section.trim() : 'All Divisions';
 
-    const assignment = await Assignment.create({
+    const assignmentData = {
       title: title.trim(),
       description: description.trim(),
       subject: subject.trim(),
@@ -126,7 +136,13 @@ export const createAssignment = async (req, res, next) => {
       totalMarks: Number(totalMarks),
       status: status || 'active',
       faculty: req.user._id, // Set automatically from authenticated user
-    });
+    };
+
+    if (academicClass) {
+      assignmentData.academicClass = academicClass;
+    }
+
+    const assignment = await Assignment.create(assignmentData);
 
     // Log system activity (fail-safe)
     try {
@@ -143,9 +159,17 @@ export const createAssignment = async (req, res, next) => {
       console.error('[AssignmentController] Activity logging ignored failure:', logErr.message);
     }
 
-    // Notify all students in the assigned department
-    const departmentStudents = await User.find({ role: 'student', department: targetDepartment }).select('_id');
-    for (const student of departmentStudents) {
+    // Notify students in the assigned class or department
+    let recipientQuery = { role: 'student', department: targetDepartment };
+    if (academicClass) {
+      const classEnrollments = await StudentEnrollment.find({ academicClass, status: 'active' }).select('student');
+      const studentIds = classEnrollments.map((e) => e.student);
+      if (studentIds.length > 0) {
+        recipientQuery = { _id: { $in: studentIds } };
+      }
+    }
+    const targetStudents = await User.find(recipientQuery).select('_id');
+    for (const student of targetStudents) {
       await createNotification({
         recipient: student._id,
         title: 'New Assignment',
@@ -156,10 +180,9 @@ export const createAssignment = async (req, res, next) => {
       });
     }
 
-    const populatedAssignment = await Assignment.findById(assignment._id).populate(
-      'faculty',
-      'name email role department'
-    );
+    const populatedAssignment = await Assignment.findById(assignment._id)
+      .populate('faculty', 'name email role department')
+      .populate('academicClass', 'name year semester');
 
     res.status(201).json(populatedAssignment);
   } catch (error) {
@@ -192,16 +215,18 @@ export const updateAssignment = async (req, res, next) => {
     assignment.description = req.body.description ? req.body.description.trim() : assignment.description;
     assignment.subject = req.body.subject ? req.body.subject.trim() : assignment.subject;
     assignment.department = req.body.department ? req.body.department.trim() : assignment.department;
+    if (req.body.academicClass !== undefined) {
+      assignment.academicClass = req.body.academicClass || null;
+    }
     assignment.section = req.body.section ? req.body.section.trim() : assignment.section;
     assignment.dueDate = req.body.dueDate ? new Date(req.body.dueDate) : assignment.dueDate;
     assignment.totalMarks = req.body.totalMarks !== undefined ? Number(req.body.totalMarks) : assignment.totalMarks;
     assignment.status = req.body.status || assignment.status;
 
     const updatedAssignment = await assignment.save();
-    const populatedAssignment = await Assignment.findById(updatedAssignment._id).populate(
-      'faculty',
-      'name email role department'
-    );
+    const populatedAssignment = await Assignment.findById(updatedAssignment._id)
+      .populate('faculty', 'name email role department')
+      .populate('academicClass', 'name year semester');
 
     res.json(populatedAssignment);
   } catch (error) {
