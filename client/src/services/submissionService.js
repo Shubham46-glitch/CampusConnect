@@ -20,7 +20,19 @@ export const evaluateSubmission = async (id, evalData) => {
   return response.data;
 };
 
-export const uploadSubmissionFile = async (fileName, fileData) => {
-  const response = await API.post('/submissions/upload', { fileName, fileData });
+export const uploadSubmissionFile = async (fileObj, fileData = '') => {
+  // If fileObj is a File/Blob instance, send via FormData multipart/form-data
+  if (fileObj && typeof fileObj === 'object' && fileObj.name) {
+    const formData = new FormData();
+    formData.append('file', fileObj);
+    const response = await API.post('/submissions/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+  // Fallback to base64 JSON payload
+  const response = await API.post('/submissions/upload', { fileName: fileObj, fileData });
   return response.data;
 };

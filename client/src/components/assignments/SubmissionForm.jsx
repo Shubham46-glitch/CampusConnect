@@ -35,16 +35,23 @@ const SubmissionForm = ({ onSubmit, loading, initialSubmission }) => {
 
       if (selectedFile) {
         setUploading(true);
-        const reader = new FileReader();
-        const fileData = await new Promise((resolve, reject) => {
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = (err) => reject(err);
-          reader.readAsDataURL(selectedFile);
-        });
-
-        const uploadRes = await uploadSubmissionFile(selectedFile.name, fileData);
-        finalFileUrl = uploadRes.fileUrl;
-        finalFileName = uploadRes.fileName;
+        try {
+          // Send raw File object via FormData (Fast, binary stream, bypasses proxy JSON size limits)
+          const uploadRes = await uploadSubmissionFile(selectedFile);
+          finalFileUrl = uploadRes.fileUrl;
+          finalFileName = uploadRes.fileName;
+        } catch (uploadErr) {
+          console.warn('[FormData Upload Failed] Attempting Base64 fallback...', uploadErr);
+          const reader = new FileReader();
+          const fileData = await new Promise((resolve, reject) => {
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = (err) => reject(err);
+            reader.readAsDataURL(selectedFile);
+          });
+          const uploadRes = await uploadSubmissionFile(selectedFile.name, fileData);
+          finalFileUrl = uploadRes.fileUrl;
+          finalFileName = uploadRes.fileName;
+        }
         setUploading(false);
       }
 

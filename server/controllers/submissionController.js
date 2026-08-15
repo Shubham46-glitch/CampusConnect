@@ -297,14 +297,48 @@ export const gradeSubmission = async (req, res, next) => {
   }
 };
 
-// @desc    Secure upload of assignment submission file
+import multer from 'multer';
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../uploads/submissions');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniquePrefix = `${Date.now()}_${Math.round(Math.random() * 1e6)}`;
+    const safeBaseName = path.basename(file.originalname).replace(/[^a-zA-Z0-9_.-]/g, '_');
+    cb(null, `${uniquePrefix}_${safeBaseName}`);
+  },
+});
+
+export const multerUpload = multer({
+  storage,
+  limits: { fileSize: 35 * 1024 * 1024 }, // 35MB limit
+});
+
+// @desc    Secure upload of assignment submission file (Supports multipart/form-data & base64)
 // @route   POST /api/submissions/upload
 // @access  Private (Student)
 export const uploadSubmissionFile = async (req, res, next) => {
   try {
+    // 1. Check if file was uploaded via multipart/form-data (multer)
+    if (req.file) {
+      const storedFileName = req.file.filename;
+      const fileUrl = `/api/submissions/download/${storedFileName}`;
+      return res.json({
+        fileUrl,
+        fileName: req.file.originalname.trim(),
+        storedFileName,
+      });
+    }
+
+    // 2. Base64 JSON payload fallback
     const { fileName, fileData } = req.body;
     if (!fileName || !fileData) {
-      return res.status(400).json({ message: 'File name and file content payload are required' });
+      return res.status(400).json({ message: 'File content payload or multipart file is required' });
     }
 
     const uploadDir = path.join(__dirname, '../uploads/submissions');
