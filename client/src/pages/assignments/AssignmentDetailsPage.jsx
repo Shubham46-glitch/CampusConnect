@@ -7,7 +7,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import Button from '../../components/Button';
 import Badge from '../../components/Badge';
 import { getAssignmentById, deleteAssignment, submitAssignment } from '../../services/assignmentService';
-import API from '../../services/api';
+import API, { getFileUrl } from '../../services/api';
 import useAuth from '../../hooks/useAuth';
 
 const AssignmentDetailsPage = () => {
@@ -247,7 +247,7 @@ const AssignmentDetailsPage = () => {
                     </div>
                     {submission.fileUrl && (
                       <a
-                        href={submission.fileUrl}
+                        href={getFileUrl(submission.fileUrl)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-3 py-1 bg-white border border-brand-200 hover:bg-brand-50 text-brand-700 text-xs font-bold rounded-lg transition-colors inline-flex items-center space-x-1 shrink-0"

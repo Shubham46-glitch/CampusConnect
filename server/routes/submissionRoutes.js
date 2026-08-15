@@ -19,7 +19,7 @@ router.route('/upload')
   .post(protect, authorizeRoles('student'), handleMulterUpload('file'), uploadSubmissionFile);
 
 router.route('/download/:filename')
-  .get(protect, downloadSubmissionFile);
+  .get(downloadSubmissionFile);
 
 router.route('/:id')
   .get(protect, getSubmissionById);

@@ -9,6 +9,7 @@ import Table from '../../components/Table';
 import Badge from '../../components/Badge';
 import { getAssignmentSubmissions } from '../../services/assignmentService';
 import { evaluateSubmission } from '../../services/submissionService';
+import { getFileUrl } from '../../services/api';
 
 const AssignmentSubmissionsPage = () => {
   const { id } = useParams();
@@ -165,7 +166,7 @@ const AssignmentSubmissionsPage = () => {
                     {item.hasSubmitted ? (
                       item.fileUrl ? (
                         <a
-                          href={item.fileUrl}
+                          href={getFileUrl(item.fileUrl)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-brand-600 hover:underline font-semibold inline-flex items-center space-x-1"

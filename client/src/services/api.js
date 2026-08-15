@@ -54,4 +54,19 @@ API.interceptors.response.use(
   }
 );
 
+export const getFileUrl = (relativeOrAbsoluteUrl) => {
+  if (!relativeOrAbsoluteUrl) return '';
+  if (relativeOrAbsoluteUrl.startsWith('http://') || relativeOrAbsoluteUrl.startsWith('https://')) {
+    return relativeOrAbsoluteUrl;
+  }
+  const baseURL = getBaseURL();
+  const rootDomain = baseURL.replace(/\/+api\/?$/, '');
+  const cleanPath = relativeOrAbsoluteUrl.startsWith('/') ? relativeOrAbsoluteUrl : `/${relativeOrAbsoluteUrl}`;
+
+  if (rootDomain && rootDomain !== '/api' && !rootDomain.startsWith('/')) {
+    return `${rootDomain}${cleanPath}`;
+  }
+  return cleanPath;
+};
+
 export default API;
