@@ -10,6 +10,8 @@ services:
         value: 5000
       - key: MONGO_URI
         sync: false
+      - key: MONGODB_URI
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: NODE_ENV
@@ -21,7 +23,11 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: ./client/dist
     rootDir: client
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
+

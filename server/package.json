@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
+    "build": "npm install --prefix ../client && npm run build --prefix ../client",
     "dev": "nodemon server.js",
     "seed": "node seedStudents.js",
     "seed:reset": "node seedBulkData.js --reset"

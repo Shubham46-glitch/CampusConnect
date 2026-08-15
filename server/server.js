@@ -62,6 +62,23 @@ app.use('/api/academic', academicRoutes);
 app.use('/api/attendance', attendanceRoutes);
 
 
+// Serve static frontend assets in production if client/dist exists
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const clientDistPath = path.join(__dirname, '../client/dist');
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
+
 // Error Handling Middleware
 app.use(notFound);
 app.use(errorHandler);

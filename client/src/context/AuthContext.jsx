@@ -45,9 +45,11 @@ export const AuthProvider = ({ children }) => {
       return { success: true, role: data.role };
     } catch (error) {
       setLoading(false);
+      const message = error.response?.data?.message ||
+        (!error.response ? 'Unable to connect to backend server. Please check internet connection or API endpoint.' : 'Login failed');
       return {
         success: false,
-        message: error.response?.data?.message || 'Login failed',
+        message,
       };
     }
   };
@@ -70,9 +72,11 @@ export const AuthProvider = ({ children }) => {
       return { success: true, role: data.role };
     } catch (error) {
       setLoading(false);
+      const message = error.response?.data?.message ||
+        (!error.response ? 'Unable to connect to backend server. Please check internet connection or API endpoint.' : 'Registration failed');
       return {
         success: false,
-        message: error.response?.data?.message || 'Registration failed',
+        message,
       };
     }
   };
@@ -98,9 +102,11 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user: updatedUser };
     } catch (error) {
       setLoading(false);
+      const message = error.response?.data?.message ||
+        (!error.response ? 'Unable to connect to backend server. Please check internet connection or API endpoint.' : 'Profile update failed');
       return {
         success: false,
-        message: error.response?.data?.message || 'Profile update failed',
+        message,
       };
     }
   };
