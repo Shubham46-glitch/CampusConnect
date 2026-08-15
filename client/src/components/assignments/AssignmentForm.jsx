@@ -137,12 +137,8 @@ const AssignmentForm = ({ initialValues = {}, onSubmit, loading, submitText = 'P
             className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium text-slate-900"
           >
             <option value="All Divisions">All Divisions (Entire Dept)</option>
-            <option value="Div 1">Div 1 (Division 1)</option>
-            <option value="Div 2">Div 2 (Division 2)</option>
-            <option value="Div 3">Div 3 (Division 3)</option>
-            <option value="Div 4">Div 4 (Division 4)</option>
-            <option value="Section A">Section A</option>
-            <option value="Section B">Section B</option>
+            <option value="Division 1">Division 1</option>
+            <option value="Division 2">Division 2</option>
           </select>
         </div>
       </div>
