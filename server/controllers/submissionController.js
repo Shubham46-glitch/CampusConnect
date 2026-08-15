@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import multer from 'multer';
 import Submission from '../models/Submission.js';
 import Assignment from '../models/Assignment.js';
 import User from '../models/User.js';
@@ -10,12 +11,64 @@ import { createNotification } from './notificationController.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Configure Multer Storage
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../uploads/submissions');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniquePrefix = `${Date.now()}_${Math.round(Math.random() * 1e6)}`;
+    const safeBaseName = path.basename(file.originalname).replace(/[^a-zA-Z0-9_.-]/g, '_');
+    cb(null, `${uniquePrefix}_${safeBaseName}`);
+  },
+});
+
+const ALLOWED_EXTENSIONS = /\.(pdf|ppt|pptx|doc|docx|xls|xlsx|zip|png|jpg|jpeg|webp|gif|svg)$/i;
+
+const fileFilter = (req, file, cb) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (ALLOWED_EXTENSIONS.test(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('INVALID_FILE_TYPE'), false);
+  }
+};
+
+export const multerUpload = multer({
+  storage,
+  limits: { fileSize: 25 * 1024 * 1024 }, // Exact 25 MB limit
+  fileFilter,
+});
+
+// Fail-safe Multer Middleware Wrapper to capture file size & extension errors cleanly
+export const handleMulterUpload = (fieldName = 'file') => {
+  return (req, res, next) => {
+    multerUpload.single(fieldName)(req, res, (err) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ message: 'File size must be 25 MB or less.' });
+        }
+        if (err.message === 'INVALID_FILE_TYPE') {
+          return res.status(400).json({
+            message: 'Invalid file type. Allowed formats: PDF, PPT, PPTX, DOC, DOCX, XLS, XLSX, ZIP, and Images (.png, .jpg, .jpeg, .webp, .gif, .svg)',
+          });
+        }
+        return res.status(400).json({ message: err.message || 'File upload failed' });
+      }
+      next();
+    });
+  };
+};
+
 // @desc    Submit assignment work or replace submission (Student only)
 // @route   POST /api/assignments/:id/submit
 // @access  Private (Student)
 export const submitAssignment = async (req, res, next) => {
   try {
-    const { content, fileUrl, fileName } = req.body;
     const assignment = await Assignment.findById(req.params.id);
 
     if (!assignment) {
@@ -30,6 +83,21 @@ export const submitAssignment = async (req, res, next) => {
       return res.status(403).json({ message: 'Forbidden: You do not belong to the target department' });
     }
 
+    let finalFileUrl = req.body.fileUrl ? req.body.fileUrl.trim() : '';
+    let finalFileName = req.body.fileName ? req.body.fileName.trim() : '';
+    let finalContent = req.body.content ? req.body.content.trim() : req.body.notes ? req.body.notes.trim() : '';
+
+    // If file was uploaded directly in this multipart request
+    if (req.file) {
+      const storedFileName = req.file.filename;
+      finalFileUrl = `/api/submissions/download/${storedFileName}`;
+      finalFileName = req.file.originalname.trim();
+    }
+
+    if (!finalFileUrl && !finalContent) {
+      return res.status(400).json({ message: 'Please attach an academic file or enter submission notes' });
+    }
+
     // Deadline check: status set to 'late' if submitted after dueDate
     const isLate = new Date() > new Date(assignment.dueDate);
     const submissionStatus = isLate ? 'late' : 'submitted';
@@ -41,9 +109,9 @@ export const submitAssignment = async (req, res, next) => {
 
     if (submission) {
       // Replace existing submission
-      submission.content = content !== undefined ? content.trim() : submission.content;
-      submission.fileUrl = fileUrl ? fileUrl.trim() : submission.fileUrl;
-      submission.fileName = fileName ? fileName.trim() : submission.fileName;
+      if (finalContent) submission.content = finalContent;
+      if (finalFileUrl) submission.fileUrl = finalFileUrl;
+      if (finalFileName) submission.fileName = finalFileName;
       submission.submittedAt = new Date();
       if (submission.status !== 'graded' && submission.status !== 'evaluated') {
         submission.status = submissionStatus;
@@ -54,9 +122,9 @@ export const submitAssignment = async (req, res, next) => {
       submission = await Submission.create({
         assignment: assignment._id,
         student: req.user._id,
-        content: content ? content.trim() : '',
-        fileName: fileName ? fileName.trim() : '',
-        fileUrl: fileUrl ? fileUrl.trim() : '',
+        content: finalContent,
+        fileName: finalFileName,
+        fileUrl: finalFileUrl,
         submittedAt: new Date(),
         status: submissionStatus,
       });
@@ -126,6 +194,13 @@ export const getAssignmentSubmissions = async (req, res, next) => {
       department: assignment.department,
     }).select('name email department profileInfo status');
 
+    // Fetch student enrollments for roll numbers
+    const enrollments = await StudentEnrollment.find({ department: assignment.department }).select('student rollNumber');
+    const rollMap = new Map();
+    enrollments.forEach((e) => {
+      if (e.student) rollMap.set(e.student.toString(), e.rollNumber);
+    });
+
     // Fetch existing submissions for this assignment
     const submissions = await Submission.find({ assignment: assignment._id })
       .populate('student', 'name email department profileInfo')
@@ -140,8 +215,18 @@ export const getAssignmentSubmissions = async (req, res, next) => {
 
     const roster = allDeptStudents.map((st) => {
       const sub = submissionMap.get(st._id.toString());
+      const rollNumber = st.profileInfo?.rollNumber || rollMap.get(st._id.toString()) || 'N/A';
       return {
-        student: st,
+        student: {
+          _id: st._id,
+          name: st.name,
+          email: st.email,
+          department: st.department,
+          profileInfo: {
+            ...st.profileInfo,
+            rollNumber,
+          },
+        },
         hasSubmitted: !!sub,
         submissionId: sub?._id || null,
         submittedAt: sub?.submittedAt || null,
@@ -296,28 +381,6 @@ export const gradeSubmission = async (req, res, next) => {
     next(error);
   }
 };
-
-import multer from 'multer';
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads/submissions');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniquePrefix = `${Date.now()}_${Math.round(Math.random() * 1e6)}`;
-    const safeBaseName = path.basename(file.originalname).replace(/[^a-zA-Z0-9_.-]/g, '_');
-    cb(null, `${uniquePrefix}_${safeBaseName}`);
-  },
-});
-
-export const multerUpload = multer({
-  storage,
-  limits: { fileSize: 35 * 1024 * 1024 }, // 35MB limit
-});
 
 // @desc    Secure upload of assignment submission file (Supports multipart/form-data & base64)
 // @route   POST /api/submissions/upload

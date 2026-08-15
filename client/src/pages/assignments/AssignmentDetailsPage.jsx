@@ -53,15 +53,19 @@ const AssignmentDetailsPage = () => {
     fetchAssignmentData();
   }, [id, user]);
 
+  const [successMsg, setSuccessMsg] = useState('');
+
   const handleSubmitWork = async (submissionData) => {
     try {
       setSubmitting(true);
+      setSuccessMsg('');
       const res = await submitAssignment(id, submissionData);
       setSubmission(res.submission);
-      alert(res.message || 'Submission successful!');
+      setSuccessMsg(res.message || 'Assignment submitted successfully');
       fetchAssignmentData();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to submit assignment.');
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to submit assignment.';
+      alert(errorMsg);
     } finally {
       setSubmitting(false);
     }
@@ -205,6 +209,12 @@ const AssignmentDetailsPage = () => {
       {/* Student Submission & Evaluation Section */}
       {user?.role === 'student' && (
         <div className="space-y-6">
+          {successMsg && (
+            <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold rounded-xl flex items-center space-x-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{successMsg}</span>
+            </div>
+          )}
           {submission && (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">

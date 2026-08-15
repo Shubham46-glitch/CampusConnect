@@ -2,74 +2,62 @@ import React, { useState } from 'react';
 import Input from '../Input';
 import Button from '../Button';
 import { Send, FileCheck, Upload, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
-import { uploadSubmissionFile } from '../../services/submissionService';
+
+const ALLOWED_EXTENSIONS_REGEX = /\.(pdf|ppt|pptx|doc|docx|xls|xlsx|zip|png|jpg|jpeg|webp|gif|svg)$/i;
 
 const SubmissionForm = ({ onSubmit, loading, initialSubmission }) => {
   const [content, setContent] = useState(initialSubmission?.content || '');
   const [fileUrl, setFileUrl] = useState(initialSubmission?.fileUrl || '');
   const [fileName, setFileName] = useState(initialSubmission?.fileName || '');
   const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 25 * 1024 * 1024) {
-        setError('File size must be under 25MB.');
+        setError('File size must be 25 MB or less.');
+        e.target.value = '';
+        setSelectedFile(null);
+        setFileName('');
         return;
       }
+
+      if (!ALLOWED_EXTENSIONS_REGEX.test(file.name)) {
+        setError('Invalid file type. Allowed formats: PDF, PPT, PPTX, DOC, DOCX, XLS, XLSX, ZIP, and Images.');
+        e.target.value = '';
+        setSelectedFile(null);
+        setFileName('');
+        return;
+      }
+
       setSelectedFile(file);
       setFileName(file.name);
       setError('');
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
 
-    try {
-      let finalFileUrl = fileUrl;
-      let finalFileName = fileName;
-
-      if (selectedFile) {
-        setUploading(true);
-        try {
-          // Send raw File object via FormData (Fast, binary stream, bypasses proxy JSON size limits)
-          const uploadRes = await uploadSubmissionFile(selectedFile);
-          finalFileUrl = uploadRes.fileUrl;
-          finalFileName = uploadRes.fileName;
-        } catch (uploadErr) {
-          console.warn('[FormData Upload Failed] Attempting Base64 fallback...', uploadErr);
-          const reader = new FileReader();
-          const fileData = await new Promise((resolve, reject) => {
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = (err) => reject(err);
-            reader.readAsDataURL(selectedFile);
-          });
-          const uploadRes = await uploadSubmissionFile(selectedFile.name, fileData);
-          finalFileUrl = uploadRes.fileUrl;
-          finalFileName = uploadRes.fileName;
-        }
-        setUploading(false);
-      }
-
-      if (!finalFileUrl && !content.trim()) {
-        setError('Please attach a file or enter a submission comment.');
-        return;
-      }
-
-      onSubmit({
-        content,
-        fileUrl: finalFileUrl,
-        fileName: finalFileName,
-      });
-    } catch (err) {
-      console.error('File upload error:', err);
-      setError(err.response?.data?.message || 'Failed to process file upload.');
-      setUploading(false);
+    if (!selectedFile && !fileUrl && !content.trim()) {
+      setError('Please attach an academic file or enter a submission comment.');
+      return;
     }
+
+    // Create FormData object directly for multipart/form-data POST
+    const formData = new FormData();
+    if (selectedFile) {
+      formData.append('file', selectedFile);
+    }
+    formData.append('content', content);
+    if (fileUrl && !selectedFile) {
+      formData.append('fileUrl', fileUrl);
+      formData.append('fileName', fileName);
+    }
+
+    onSubmit(formData);
   };
 
   return (
@@ -104,13 +92,13 @@ const SubmissionForm = ({ onSubmit, loading, initialSubmission }) => {
               {fileName || selectedFile ? (
                 <span className="text-emerald-700 flex items-center justify-center space-x-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Selected: {fileName || selectedFile.name}</span>
+                  <span>Selected: {fileName || selectedFile?.name}</span>
                 </span>
               ) : (
                 'Choose File or Drop File Here'
               )}
             </span>
-            <span className="text-[11px] text-slate-400">Supported: .pdf, .ppt, .pptx, .doc, .docx, .xls, .xlsx, .zip, Images</span>
+            <span className="text-[11px] text-slate-400">Supported: .pdf, .ppt, .pptx, .doc, .docx, .xls, .xlsx, .zip, Images (Max 25 MB)</span>
           </div>
         </div>
       </div>
@@ -130,9 +118,9 @@ const SubmissionForm = ({ onSubmit, loading, initialSubmission }) => {
       </div>
 
       <div className="flex justify-end pt-2">
-        <Button type="submit" disabled={loading || uploading}>
+        <Button type="submit" disabled={loading}>
           <Send className="w-4 h-4 mr-1.5" />
-          <span>{uploading ? 'Uploading File...' : loading ? 'Submitting...' : initialSubmission ? 'Replace Submission' : 'Upload & Submit'}</span>
+          <span>{loading ? 'Submitting...' : initialSubmission ? 'Replace Submission' : 'Upload & Submit'}</span>
         </Button>
       </div>
     </form>

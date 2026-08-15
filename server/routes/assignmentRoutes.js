@@ -9,6 +9,7 @@ import {
 import {
   submitAssignment,
   getAssignmentSubmissions,
+  handleMulterUpload,
 } from '../controllers/submissionController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
@@ -25,7 +26,7 @@ router.route('/:id')
   .delete(protect, authorizeRoles('faculty', 'admin'), deleteAssignment);
 
 router.route('/:id/submit')
-  .post(protect, authorizeRoles('student'), submitAssignment);
+  .post(protect, authorizeRoles('student'), handleMulterUpload('file'), submitAssignment);
 
 router.route('/:id/submissions')
   .get(protect, authorizeRoles('faculty', 'admin'), getAssignmentSubmissions);
