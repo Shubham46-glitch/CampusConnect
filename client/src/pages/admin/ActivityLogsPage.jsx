@@ -4,7 +4,7 @@ import Table from '../../components/Table';
 import Badge from '../../components/Badge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Button from '../../components/Button';
-import axios from 'axios';
+import API from '../../services/api';
 
 const ActivityLogsPage = () => {
   const [logs, setLogs] = useState([]);
@@ -21,7 +21,6 @@ const ActivityLogsPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem('token');
       const params = {
         page,
         limit: 15,
@@ -29,14 +28,11 @@ const ActivityLogsPage = () => {
         action: actionFilter,
       };
 
-      const res = await axios.get('/api/admin/logs', {
-        headers: { Authorization: `Bearer ${token}` },
-        params,
-      });
+      const res = await API.get('/admin/logs', { params });
 
-      setLogs(res.data.logs || []);
-      setTotal(res.data.total || 0);
-      setPages(res.data.pages || 1);
+      setLogs(res.data?.logs || []);
+      setTotal(res.data?.total || 0);
+      setPages(res.data?.pages || 1);
     } catch (err) {
       console.error('Error fetching activity audit logs:', err);
       setError(err.response?.data?.message || 'Failed to load activity logs');

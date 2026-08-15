@@ -5,7 +5,7 @@ import Badge from '../../components/Badge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Button from '../../components/Button';
 import { DEPARTMENTS } from '../../constants/departments';
-import axios from 'axios';
+import API from '../../services/api';
 
 const DepartmentManagementPage = () => {
   const [departments, setDepartments] = useState([]);
@@ -25,11 +25,9 @@ const DepartmentManagementPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem('token');
-      const res = await axios.get('/api/departments', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setDepartments(res.data || []);
+      const res = await API.get('/departments');
+      const data = Array.isArray(res.data) ? res.data : (res.data?.departments || []);
+      setDepartments(data);
     } catch (err) {
       console.error('Error fetching departments:', err);
       setError(err.response?.data?.message || 'Failed to load department statistics');
@@ -41,26 +39,21 @@ const DepartmentManagementPage = () => {
   const fetchDepartmentUsers = async () => {
     try {
       setRosterLoading(true);
-      const token = localStorage.getItem('token');
-      const endpoint = viewTab === 'students' ? '/api/users/students' : '/api/users/faculty';
+      const endpoint = viewTab === 'students' ? '/users/students' : '/users/faculty';
       const params = {
         limit: 50,
         search: searchTerm,
         department: selectedDept,
       };
 
-      const res = await axios.get(endpoint, {
-        headers: { Authorization: `Bearer ${token}` },
-        params,
-      });
-
-      setRosterUsers(res.data.users || []);
+      const res = await API.get(endpoint, { params });
+      setRosterUsers(res.data?.users || (Array.isArray(res.data) ? res.data : []));
     } catch (err) {
       console.error('Error fetching department user roster:', err);
+      setRosterUsers([]);
     } finally {
       setRosterLoading(false);
     }
-
   };
 
   useEffect(() => {
@@ -71,10 +64,11 @@ const DepartmentManagementPage = () => {
     fetchDepartmentUsers();
   }, [selectedDept, viewTab]);
 
-  const activeDeptObj = departments.find((d) => d.name === selectedDept) || {
-    name: 'All Departments',
-    studentsCount: departments.reduce((acc, curr) => acc + (curr.studentsCount || 0), 0),
-    facultyCount: departments.reduce((acc, curr) => acc + (curr.facultyCount || 0), 0),
+  const safeDepartments = Array.isArray(departments) ? departments : [];
+  const activeDeptObj = safeDepartments.find((d) => d.name === selectedDept) || {
+    name: selectedDept === 'all' ? 'All Departments' : selectedDept,
+    studentsCount: safeDepartments.reduce((acc, curr) => acc + (curr.studentsCount || 0), 0),
+    facultyCount: safeDepartments.reduce((acc, curr) => acc + (curr.facultyCount || 0), 0),
   };
 
   if (loading) {

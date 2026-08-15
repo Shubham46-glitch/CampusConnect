@@ -7,7 +7,7 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Modal from '../../components/Modal';
 import { DEPARTMENTS } from '../../constants/departments';
-import axios from 'axios';
+import API from '../../services/api';
 
 const FacultyManagementPage = () => {
   const [faculty, setFaculty] = useState([]);
@@ -31,7 +31,6 @@ const FacultyManagementPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem('token');
       const params = {
         page,
         limit: 10,
@@ -40,14 +39,11 @@ const FacultyManagementPage = () => {
         status: statusFilter,
       };
 
-      const res = await axios.get('/api/users/faculty', {
-        headers: { Authorization: `Bearer ${token}` },
-        params,
-      });
+      const res = await API.get('/users/faculty', { params });
 
-      setFaculty(res.data.users || []);
-      setTotal(res.data.total || 0);
-      setPages(res.data.pages || 1);
+      setFaculty(res.data?.users || []);
+      setTotal(res.data?.total || 0);
+      setPages(res.data?.pages || 1);
     } catch (err) {
       console.error('Error fetching faculty roster:', err);
       setError(err.response?.data?.message || 'Failed to load faculty roster');
@@ -68,13 +64,8 @@ const FacultyManagementPage = () => {
 
   const handleStatusToggle = async (user) => {
     try {
-      const token = localStorage.getItem('token');
       const targetStatus = user.status === 'active' ? 'inactive' : 'active';
-      await axios.patch(
-        `/api/users/${user._id}/status`,
-        { status: targetStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await API.patch(`/users/${user._id}/status`, { status: targetStatus });
       fetchFaculty();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to update faculty status');
@@ -91,12 +82,7 @@ const FacultyManagementPage = () => {
     if (!selectedUser || !newDepartment) return;
     try {
       setUpdating(true);
-      const token = localStorage.getItem('token');
-      await axios.patch(
-        `/api/users/${selectedUser._id}/department`,
-        { department: newDepartment },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await API.patch(`/users/${selectedUser._id}/department`, { department: newDepartment });
       setEditDeptModalOpen(false);
       setSelectedUser(null);
       fetchFaculty();
