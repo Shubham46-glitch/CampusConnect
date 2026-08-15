@@ -83,9 +83,12 @@ export const submitAssignment = async (req, res, next) => {
       return res.status(403).json({ message: 'Forbidden: You do not belong to the target department' });
     }
 
+    console.log('[Backend Submit] req.file:', req.file);
+    console.log('[Backend Submit] req.body:', req.body);
+
     let finalFileUrl = req.body.fileUrl ? req.body.fileUrl.trim() : '';
     let finalFileName = req.body.fileName ? req.body.fileName.trim() : '';
-    let finalContent = req.body.content ? req.body.content.trim() : req.body.notes ? req.body.notes.trim() : '';
+    let finalContent = req.body.content ? req.body.content.trim() : req.body.notes ? req.body.notes.trim() : req.body.comment ? req.body.comment.trim() : req.body.submissionContent ? req.body.submissionContent.trim() : '';
 
     // If file was uploaded directly in this multipart request
     if (req.file) {
@@ -94,8 +97,9 @@ export const submitAssignment = async (req, res, next) => {
       finalFileName = req.file.originalname.trim();
     }
 
-    if (!finalFileUrl && !finalContent) {
-      return res.status(400).json({ message: 'Please attach an academic file or enter submission notes' });
+    // A submission is VALID if EITHER a file exists OR text content exists
+    if (!req.file && !finalFileUrl && !finalContent) {
+      return res.status(400).json({ message: 'Please upload a file or provide submission content.' });
     }
 
     // Deadline check: status set to 'late' if submitted after dueDate

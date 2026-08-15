@@ -18,9 +18,6 @@ const getBaseURL = () => {
 
 const API = axios.create({
   baseURL: getBaseURL(),
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // Interceptor to attach Authorization Bearer JWT Token to requests
@@ -32,7 +29,12 @@ API.interceptors.request.use(
     }
     // If sending FormData, delete default Content-Type header so browser automatically sets multipart/form-data with boundary
     if (config.data instanceof FormData) {
+      if (config.headers && typeof config.headers.delete === 'function') {
+        config.headers.delete('Content-Type');
+        config.headers.delete('content-type');
+      }
       delete config.headers['Content-Type'];
+      delete config.headers['content-type'];
     }
     return config;
   },

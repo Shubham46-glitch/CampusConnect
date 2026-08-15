@@ -41,8 +41,16 @@ const SubmissionForm = ({ onSubmit, loading, initialSubmission }) => {
     e.preventDefault();
     setError('');
 
-    if (!selectedFile && !fileUrl && !content.trim()) {
-      setError('Please attach an academic file or enter a submission comment.');
+    // TEMPORARY DEBUGGING
+    console.log('SELECTED FILE:', selectedFile);
+    console.log('FILE NAME:', selectedFile?.name);
+    console.log('FILE SIZE:', selectedFile?.size);
+    console.log('COMMENT:', content);
+
+    if (!selectedFile && !fileUrl && !content?.trim()) {
+      const msg = 'Please upload a file or provide submission content.';
+      setError(msg);
+      alert(msg);
       return;
     }
 
@@ -51,11 +59,16 @@ const SubmissionForm = ({ onSubmit, loading, initialSubmission }) => {
     if (selectedFile) {
       formData.append('file', selectedFile);
     }
-    formData.append('content', content);
+    formData.append('content', content || '');
+    formData.append('comment', content || '');
     if (fileUrl && !selectedFile) {
       formData.append('fileUrl', fileUrl);
       formData.append('fileName', fileName);
     }
+
+    // TEMPORARY DEBUGGING
+    console.log('FORM DATA FILE:', formData.get('file'));
+    console.log('FORM DATA COMMENT:', formData.get('content') || formData.get('comment'));
 
     onSubmit(formData);
   };
