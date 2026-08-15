@@ -149,13 +149,19 @@ export const updateUserStatus = async (req, res, next) => {
     user.status = status;
     await user.save();
 
-    await logActivity({
-      action: 'USER_STATUS_UPDATED',
-      performedBy: req.user._id,
-      details: `Updated account status for ${user.name} (${user.email}) to ${status}`,
-      targetId: user._id,
-      targetType: 'User',
-    });
+    try {
+      if (typeof logActivity === 'function') {
+        await logActivity({
+          action: 'USER_STATUS_UPDATED',
+          performedBy: req.user._id,
+          details: `Updated account status for ${user.name} (${user.email}) to ${status}`,
+          targetId: user._id,
+          targetType: 'User',
+        });
+      }
+    } catch (logErr) {
+      console.error('[UserController] Activity logging ignored failure:', logErr.message);
+    }
 
     res.json({
       message: `User account status updated to ${status}`,
@@ -192,13 +198,19 @@ export const updateUserDepartment = async (req, res, next) => {
     user.department = department.trim();
     await user.save();
 
-    await logActivity({
-      action: 'USER_DEPARTMENT_UPDATED',
-      performedBy: req.user._id,
-      details: `Updated department for ${user.name} (${user.email}) from "${oldDept}" to "${user.department}"`,
-      targetId: user._id,
-      targetType: 'User',
-    });
+    try {
+      if (typeof logActivity === 'function') {
+        await logActivity({
+          action: 'USER_DEPARTMENT_UPDATED',
+          performedBy: req.user._id,
+          details: `Updated department for ${user.name} (${user.email}) from "${oldDept}" to "${user.department}"`,
+          targetId: user._id,
+          targetType: 'User',
+        });
+      }
+    } catch (logErr) {
+      console.error('[UserController] Activity logging ignored failure:', logErr.message);
+    }
 
     res.json({
       message: `User department updated to ${user.department}`,
@@ -255,13 +267,19 @@ export const deleteUser = async (req, res, next) => {
     const user = await User.findById(req.params.id);
     if (user) {
       await User.deleteOne({ _id: user._id });
-      await logActivity({
-        action: 'USER_DELETED',
-        performedBy: req.user._id,
-        details: `Deleted user account: ${user.name} (${user.email})`,
-        targetId: user._id,
-        targetType: 'User',
-      });
+      try {
+        if (typeof logActivity === 'function') {
+          await logActivity({
+            action: 'USER_DELETED',
+            performedBy: req.user._id,
+            details: `Deleted user account: ${user.name} (${user.email})`,
+            targetId: user._id,
+            targetType: 'User',
+          });
+        }
+      } catch (logErr) {
+        console.error('[UserController] Activity logging ignored failure:', logErr.message);
+      }
       res.json({ message: 'User removed successfully' });
     } else {
       res.status(404).json({ message: 'User not found' });

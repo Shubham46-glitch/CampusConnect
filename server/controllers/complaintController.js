@@ -222,14 +222,20 @@ export const updateComplaintStatus = async (req, res, next) => {
 
     const updatedComplaint = await complaint.save();
 
-    // Log system activity
-    await logActivity({
-      action: 'COMPLAINT_STATUS_UPDATED',
-      performedBy: req.user._id,
-      details: `Updated complaint status for "${complaint.title}" to ${status}`,
-      targetId: complaint._id,
-      targetType: 'Complaint',
-    });
+    // Log system activity (fail-safe)
+    try {
+      if (typeof logActivity === 'function') {
+        await logActivity({
+          action: 'COMPLAINT_STATUS_UPDATED',
+          performedBy: req.user._id,
+          details: `Updated complaint status for "${complaint.title}" to ${status}`,
+          targetId: complaint._id,
+          targetType: 'Complaint',
+        });
+      }
+    } catch (logErr) {
+      console.error('[ComplaintController] Activity logging ignored failure:', logErr.message);
+    }
 
 
     // Format notification title & message

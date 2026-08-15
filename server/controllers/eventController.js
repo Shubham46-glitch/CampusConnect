@@ -104,14 +104,20 @@ export const createEvent = async (req, res, next) => {
       participants: [],
     });
 
-    // Log system activity
-    await logActivity({
-      action: 'EVENT_CREATED',
-      performedBy: req.user._id,
-      details: `Created ${selectedAudience} event "${event.title}"${targetDepartment ? ` for department "${targetDepartment}"` : ''}`,
-      targetId: event._id,
-      targetType: 'Event',
-    });
+    // Log system activity (fail-safe)
+    try {
+      if (typeof logActivity === 'function') {
+        await logActivity({
+          action: 'EVENT_CREATED',
+          performedBy: req.user._id,
+          details: `Created ${selectedAudience} event "${event.title}"${targetDepartment ? ` for department "${targetDepartment}"` : ''}`,
+          targetId: event._id,
+          targetType: 'Event',
+        });
+      }
+    } catch (logErr) {
+      console.error('[EventController] Activity logging ignored failure:', logErr.message);
+    }
 
     // Notify targeted students
     let studentFilter = { role: 'student' };

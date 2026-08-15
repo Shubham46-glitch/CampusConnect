@@ -120,14 +120,20 @@ export const createAnnouncement = async (req, res, next) => {
       status: status || 'published',
     });
 
-    // Log system activity
-    await logActivity({
-      action: 'ANNOUNCEMENT_PUBLISHED',
-      performedBy: req.user._id,
-      details: `Published ${selectedAudience} announcement "${announcement.title}"${targetDepartment ? ` for department "${targetDepartment}"` : ''}`,
-      targetId: announcement._id,
-      targetType: 'Announcement',
-    });
+    // Log system activity (fail-safe)
+    try {
+      if (typeof logActivity === 'function') {
+        await logActivity({
+          action: 'ANNOUNCEMENT_PUBLISHED',
+          performedBy: req.user._id,
+          details: `Published ${selectedAudience} announcement "${announcement.title}"${targetDepartment ? ` for department "${targetDepartment}"` : ''}`,
+          targetId: announcement._id,
+          targetType: 'Announcement',
+        });
+      }
+    } catch (logErr) {
+      console.error('[AnnouncementController] Activity logging ignored failure:', logErr.message);
+    }
 
 
     // Notify target audience

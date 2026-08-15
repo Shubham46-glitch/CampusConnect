@@ -128,14 +128,20 @@ export const createAssignment = async (req, res, next) => {
       faculty: req.user._id, // Set automatically from authenticated user
     });
 
-    // Log system activity
-    await logActivity({
-      action: 'ASSIGNMENT_CREATED',
-      performedBy: req.user._id,
-      details: `Created assignment "${assignment.title}" for department "${targetDepartment}", division "${targetSection}" (${assignment.subject})`,
-      targetId: assignment._id,
-      targetType: 'Assignment',
-    });
+    // Log system activity (fail-safe)
+    try {
+      if (typeof logActivity === 'function') {
+        await logActivity({
+          action: 'ASSIGNMENT_CREATED',
+          performedBy: req.user._id,
+          details: `Created assignment "${assignment.title}" for department "${targetDepartment}", division "${targetSection}" (${assignment.subject})`,
+          targetId: assignment._id,
+          targetType: 'Assignment',
+        });
+      }
+    } catch (logErr) {
+      console.error('[AssignmentController] Activity logging ignored failure:', logErr.message);
+    }
 
     // Notify all students in the assigned department
     const departmentStudents = await User.find({ role: 'student', department: targetDepartment }).select('_id');
