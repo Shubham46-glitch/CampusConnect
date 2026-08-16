@@ -1,10 +1,10 @@
 export const DEPARTMENTS = [
   'Computer Science',
+  'Electronics & Computer Science',
   'Information Technology',
-  'Electronics & Telecommunication',
   'Artificial Intelligence & Data Science',
-  'Mechanical Engineering',
-  'Civil Engineering',
+  'Artificial Intelligence & Machine Learning',
 ];
 
 export const DEFAULT_DEPARTMENT = 'Computer Science';
+

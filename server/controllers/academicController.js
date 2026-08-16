@@ -7,16 +7,15 @@ import StudentEnrollment from '../models/StudentEnrollment.js';
 import User from '../models/User.js';
 
 const DEPT_CODES = {
-  'Information Technology': 'IT',
-  'Computer Engineering': 'COMPS',
   'Computer Science': 'CS',
-  'Artificial Intelligence & Machine Learning': 'AIML',
-  'Artificial Intelligence & Data Science': 'AIDS',
   'Electronics & Computer Science': 'ECS',
-  'Electronics & Telecommunication': 'EXTC',
-  'Mechanical Engineering': 'MECH',
-  'Civil Engineering': 'CIVIL',
+  'Information Technology': 'IT',
+  'Artificial Intelligence & Data Science': 'AIDS',
+  'Artificial Intelligence & Machine Learning': 'AIML',
 };
+
+const escapeRegex = (text) => String(text).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+
 
 // ==================== DEPARTMENTS ====================
 

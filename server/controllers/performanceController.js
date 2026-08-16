@@ -30,12 +30,16 @@ export const getStudentPerformance = async (req, res, next) => {
 
     const totalAssignmentsCount = assignments.length;
 
+    const escapeRegex = (text) => String(text).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+
     // 2. Fetch students authorized for this faculty/department scope
     let studentQuery = { role: 'student' };
     if (role === 'faculty') {
-      studentQuery.department = department ? new RegExp(department.trim(), 'i') : 'Computer Science';
+      const dept = department ? department.trim() : 'Computer Science';
+      studentQuery.department = new RegExp(`^${escapeRegex(dept)}$`, 'i');
     } else if (role === 'admin' && req.query.department && req.query.department !== 'all') {
-      studentQuery.department = new RegExp(req.query.department.trim(), 'i');
+      const dept = req.query.department.trim();
+      studentQuery.department = new RegExp(`^${escapeRegex(dept)}$`, 'i');
     }
 
     // Optional Search Filter (by student name, email, department, or rollNumber)

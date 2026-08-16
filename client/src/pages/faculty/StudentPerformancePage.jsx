@@ -24,16 +24,10 @@ import {
   getStudentPerformanceDetails,
 } from '../../services/performanceService';
 
-const DEPARTMENTS = [
-  'All Departments',
-  'Computer Science',
-  'Information Technology',
-  'Electronics & Telecom',
-  'AI & Data Science',
-  'Mechanical Engineering',
-  'Electrical Engineering',
-  'Civil Engineering',
-];
+import { DEPARTMENTS as APP_DEPARTMENTS } from '../../constants/departments';
+
+const DEPARTMENTS = ['All Departments', ...APP_DEPARTMENTS];
+
 
 const StudentPerformancePage = () => {
   const [searchTerm, setSearchTerm] = useState('');

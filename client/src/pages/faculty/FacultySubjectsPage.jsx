@@ -32,14 +32,10 @@ const FacultySubjectsPage = () => {
   const getDeptShortCode = (deptName) => {
     if (!deptName) return 'CS';
     if (deptName === 'Computer Science') return 'CS';
+    if (deptName === 'Electronics & Computer Science') return 'ECS';
     if (deptName === 'Information Technology') return 'IT';
-    if (deptName === 'Computer Engineering') return 'COMPS';
-    if (deptName.includes('Machine Learning')) return 'AIML';
     if (deptName.includes('Data Science')) return 'AIDS';
-    if (deptName.includes('Electronics & Computer')) return 'ECS';
-    if (deptName.includes('Telecommunication')) return 'EXTC';
-    if (deptName.includes('Mechanical')) return 'MECH';
-    if (deptName.includes('Civil')) return 'CIVIL';
+    if (deptName.includes('Machine Learning')) return 'AIML';
     return deptName.split(' ').map((w) => w[0]).join('').toUpperCase();
   };
 

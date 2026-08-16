@@ -8,6 +8,9 @@ import Department from '../models/Department.js';
 import User from '../models/User.js';
 import { createNotification } from './notificationController.js';
 
+const escapeRegex = (text) => String(text).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+
+
 // ==================== FACULTY: GET MY ASSIGNED & CREATED SUBJECTS ====================
 export const getFacultyMySubjects = async (req, res) => {
   try {
@@ -62,10 +65,10 @@ export const getFacultyMySubjects = async (req, res) => {
         }
 
         if (studentCount === 0 && (deptName || req.user.department)) {
-          const targetDept = deptName || req.user.department;
+          const targetDept = (deptName || req.user.department).trim();
           studentCount = await User.countDocuments({
             role: 'student',
-            department: new RegExp(targetDept.trim(), 'i'),
+            department: new RegExp(`^${escapeRegex(targetDept)}$`, 'i'),
           });
         }
 
@@ -142,10 +145,10 @@ export const getStudentsForSession = async (req, res) => {
     }
 
     if (students.length === 0) {
-      const targetDept = subjectObj.department?.name || req.user.department;
+      const targetDept = (subjectObj.department?.name || req.user.department)?.trim();
       const deptStudents = await User.find({
         role: 'student',
-        ...(targetDept ? { department: new RegExp(targetDept.trim(), 'i') } : {}),
+        ...(targetDept ? { department: new RegExp(`^${escapeRegex(targetDept)}$`, 'i') } : {}),
       })
         .select('name email profileInfo department')
         .sort({ name: 1 });

@@ -24,11 +24,13 @@ export const getStudents = async (req, res, next) => {
 
     const query = { role: 'student' };
 
+    const escapeRegex = (text) => String(text).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+
     // SECURITY ENFORCEMENT: Faculty members are strictly locked to THEIR OWN department.
-    if (req.user.role === 'faculty') {
-      query.department = req.user.department;
+    if (req.user.role === 'faculty' && req.user.department) {
+      query.department = new RegExp(`^${escapeRegex(req.user.department.trim())}$`, 'i');
     } else if (req.user.role === 'admin' && req.query.department && req.query.department !== 'all') {
-      query.department = req.query.department;
+      query.department = new RegExp(`^${escapeRegex(req.query.department.trim())}$`, 'i');
     }
 
     // Search filter across name, email, department, rollNumber

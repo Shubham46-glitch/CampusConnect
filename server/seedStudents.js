@@ -11,15 +11,11 @@ import bcrypt from 'bcryptjs';
 
 // Department Shortcode Mapping
 const DEPT_CODES = {
-  'Information Technology': 'IT',
-  'Computer Engineering': 'COMPS',
   'Computer Science': 'CS',
-  'Artificial Intelligence & Machine Learning': 'AIML',
-  'Artificial Intelligence & Data Science': 'AIDS',
   'Electronics & Computer Science': 'ECS',
-  'Electronics & Telecommunication': 'EXTC',
-  'Mechanical Engineering': 'MECH',
-  'Civil Engineering': 'CIVIL',
+  'Information Technology': 'IT',
+  'Artificial Intelligence & Data Science': 'AIDS',
+  'Artificial Intelligence & Machine Learning': 'AIML',
 };
 
 // Rich list of realistic Maharashtrian & Indian Student Names
@@ -93,14 +89,8 @@ const seedStudents = async () => {
     // Pre-hash default password once for fast bulk creation
     const hashedPassword = await bcrypt.hash('Campus@123', 10);
 
-    // 1. Gather all target departments (from DB, Users, and Constants)
     const dbDepts = await Department.find();
-    const dbDeptNames = dbDepts.map((d) => d.name);
-    const userDeptNames = await User.distinct('department', { role: 'student' });
-
-    const allDeptNames = Array.from(
-      new Set([...DEPARTMENTS, ...dbDeptNames, ...userDeptNames].filter(Boolean))
-    );
+    const allDeptNames = DEPARTMENTS;
 
     const summaryResults = [];
 
