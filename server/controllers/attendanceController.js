@@ -10,6 +10,55 @@ import { createNotification } from './notificationController.js';
 
 const escapeRegex = (text) => String(text).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 
+const DEPT_CODES = {
+  'Computer Science': 'CS',
+  'Electronics & Computer Science': 'ECS',
+  'Information Technology': 'IT',
+  'Artificial Intelligence & Data Science': 'AIDS',
+  'Artificial Intelligence & Machine Learning': 'AIML',
+};
+
+const getDeptShortCode = (deptName) => {
+  if (!deptName) return 'CS';
+  const trimmed = String(deptName).trim();
+  if (DEPT_CODES[trimmed]) return DEPT_CODES[trimmed];
+  return trimmed.split(' ').map((w) => w[0]).join('').toUpperCase();
+};
+
+const DEFAULT_DEPT_SUBJECTS = {
+  'Computer Science': [
+    { name: 'Data Structures & Algorithms', code: 'CS-DSA', credits: 4 },
+    { name: 'Operating Systems', code: 'CS-OS', credits: 4 },
+    { name: 'Database Management Systems', code: 'CS-DBMS', credits: 4 },
+    { name: 'Computer Networks', code: 'CS-CN', credits: 3 },
+  ],
+  'Electronics & Computer Science': [
+    { name: 'Microprocessors & Embedded Systems', code: 'ECS-MES', credits: 4 },
+    { name: 'Digital Signal Processing', code: 'ECS-DSP', credits: 4 },
+    { name: 'VLSI Design & System Architecture', code: 'ECS-VLSI', credits: 4 },
+    { name: 'Computer Organization & Architecture', code: 'ECS-COA', credits: 3 },
+  ],
+  'Information Technology': [
+    { name: 'Full Stack Web Development', code: 'IT-FSWD', credits: 4 },
+    { name: 'Software Engineering & Agile', code: 'IT-SE', credits: 4 },
+    { name: 'Cloud Computing & DevOps', code: 'IT-CCD', credits: 4 },
+    { name: 'Cyber Security & Cryptography', code: 'IT-CSC', credits: 3 },
+  ],
+  'Artificial Intelligence & Data Science': [
+    { name: 'Data Mining & Business Analytics', code: 'AIDS-DMBA', credits: 4 },
+    { name: 'Applied Machine Learning', code: 'AIDS-AML', credits: 4 },
+    { name: 'Big Data Processing & Engineering', code: 'AIDS-BDPE', credits: 4 },
+    { name: 'Data Visualization & Storytelling', code: 'AIDS-DVS', credits: 3 },
+  ],
+  'Artificial Intelligence & Machine Learning': [
+    { name: 'Artificial Intelligence & Search Algorithms', code: 'AIML-AISA', credits: 4 },
+    { name: 'Deep Learning & Neural Networks', code: 'AIML-DLNN', credits: 4 },
+    { name: 'Natural Language Processing', code: 'AIML-NLP', credits: 4 },
+    { name: 'Computer Vision & Pattern Recognition', code: 'AIML-CVPR', credits: 3 },
+  ],
+};
+
+
 
 // ==================== FACULTY: GET MY ASSIGNED & CREATED SUBJECTS ====================
 export const getFacultyMySubjects = async (req, res) => {
@@ -49,7 +98,63 @@ export const getFacultyMySubjects = async (req, res) => {
       }
     });
 
-    const resultList = Array.from(subjectsMap.values());
+    let resultList = Array.from(subjectsMap.values());
+
+    // Auto-provision default subjects for faculty's department if no subjects assigned yet
+    if (resultList.length === 0 && req.user.department) {
+      const targetDept = req.user.department.trim();
+      const code = getDeptShortCode(targetDept);
+
+      let deptDoc = await Department.findOne({ name: new RegExp(`^${escapeRegex(targetDept)}$`, 'i') });
+      if (!deptDoc) {
+        deptDoc = await Department.create({ name: targetDept, code, description: `${targetDept} Department` });
+      }
+
+      let classDoc = await AcademicClass.findOne({ department: deptDoc._id, name: `${code}-D1` });
+      if (!classDoc) {
+        classDoc = await AcademicClass.create({ name: `${code}-D1`, department: deptDoc._id, year: 'Second Year', semester: 3 });
+      }
+
+      const defaultSubs = DEFAULT_DEPT_SUBJECTS[targetDept] || [
+        { name: `${code} Core Subject 1`, code: `${code}-SUB1`, credits: 4 },
+        { name: `${code} Core Subject 2`, code: `${code}-SUB2`, credits: 4 },
+      ];
+
+      for (const sDef of defaultSubs) {
+        let sub = await Subject.findOne({ code: sDef.code, academicClass: classDoc._id });
+        if (!sub) {
+          sub = await Subject.create({
+            name: sDef.name,
+            code: sDef.code,
+            credits: sDef.credits,
+            department: deptDoc._id,
+            academicClass: classDoc._id,
+            faculty: facultyId,
+            semester: 3,
+          });
+        }
+        await FacultyAssignment.findOneAndUpdate(
+          { faculty: facultyId, subject: sub._id, academicClass: classDoc._id },
+          { faculty: facultyId, subject: sub._id, academicClass: classDoc._id, department: deptDoc._id, status: 'active' },
+          { upsert: true }
+        );
+      }
+
+      const freshOwned = await Subject.find({ faculty: facultyId })
+        .populate('academicClass', 'name year semester')
+        .populate('department', 'name code');
+
+      freshOwned.forEach((sub) => {
+        subjectsMap.set(sub._id.toString(), {
+          id: sub._id,
+          subject: sub,
+          academicClass: sub.academicClass,
+          department: sub.department,
+        });
+      });
+
+      resultList = Array.from(subjectsMap.values());
+    }
 
     const result = await Promise.all(
       resultList.map(async (item) => {
@@ -134,14 +239,16 @@ export const getStudentsForSession = async (req, res) => {
         .populate('student', 'name email profileInfo department')
         .sort({ rollNumber: 1 });
 
-      students = enrollments.map((e) => ({
-        _id: e.student._id,
-        name: e.student.name,
-        email: e.student.email,
-        rollNumber: e.rollNumber || e.student.profileInfo?.rollNumber || 'N/A',
-        avatar: e.student.profileInfo?.avatar || '',
-        department: e.student.department,
-      }));
+      students = enrollments
+        .filter((e) => e.student)
+        .map((e) => ({
+          _id: e.student._id,
+          name: e.student.name,
+          email: e.student.email,
+          rollNumber: e.rollNumber || e.student.profileInfo?.rollNumber || 'N/A',
+          avatar: e.student.profileInfo?.avatar || '',
+          department: e.student.department,
+        }));
     }
 
     if (students.length === 0) {
@@ -153,11 +260,12 @@ export const getStudentsForSession = async (req, res) => {
         .select('name email profileInfo department')
         .sort({ name: 1 });
 
+      const deptCode = getDeptShortCode(targetDept);
       students = deptStudents.map((s, idx) => ({
         _id: s._id,
         name: s.name,
         email: s.email,
-        rollNumber: s.profileInfo?.rollNumber || `CS${String(idx + 1).padStart(3, '0')}`,
+        rollNumber: s.profileInfo?.rollNumber || `${deptCode}${String(idx + 1).padStart(3, '0')}`,
         avatar: s.profileInfo?.avatar || '',
         department: s.department,
       }));
@@ -444,9 +552,36 @@ export const getStudentMyAttendance = async (req, res) => {
     const studentId = req.user._id;
 
     // Find student's enrollment
-    const enrollment = await StudentEnrollment.findOne({ student: studentId, status: 'active' })
+    let enrollment = await StudentEnrollment.findOne({ student: studentId, status: 'active' })
       .populate('academicClass', 'name year semester')
       .populate('department', 'name code');
+
+    if (!enrollment && req.user.department) {
+      const targetDept = req.user.department.trim();
+      const code = getDeptShortCode(targetDept);
+
+      let deptDoc = await Department.findOne({ name: new RegExp(`^${escapeRegex(targetDept)}$`, 'i') });
+      if (!deptDoc) {
+        deptDoc = await Department.create({ name: targetDept, code, description: `${targetDept} Department` });
+      }
+
+      let classDoc = await AcademicClass.findOne({ department: deptDoc._id, name: `${code}-D1` });
+      if (!classDoc) {
+        classDoc = await AcademicClass.create({ name: `${code}-D1`, department: deptDoc._id, year: 'Second Year', semester: 3 });
+      }
+
+      const newEnrollment = await StudentEnrollment.create({
+        student: studentId,
+        academicClass: classDoc._id,
+        department: deptDoc._id,
+        rollNumber: req.user.profileInfo?.rollNumber || `${code}-01`,
+        status: 'active',
+      });
+
+      enrollment = await StudentEnrollment.findById(newEnrollment._id)
+        .populate('academicClass', 'name year semester')
+        .populate('department', 'name code');
+    }
 
     if (!enrollment) {
       return res.json({
@@ -464,7 +599,31 @@ export const getStudentMyAttendance = async (req, res) => {
     const classId = enrollment.academicClass._id;
 
     // Get subjects for this class
-    const subjects = await Subject.find({ academicClass: classId, status: 'active' });
+    let subjects = await Subject.find({ academicClass: classId });
+
+    if (subjects.length === 0 && enrollment.department?.name) {
+      const targetDept = enrollment.department.name.trim();
+      const code = getDeptShortCode(targetDept);
+      const defaultSubs = DEFAULT_DEPT_SUBJECTS[targetDept] || [
+        { name: `${code} Core Subject 1`, code: `${code}-SUB1`, credits: 4 },
+        { name: `${code} Core Subject 2`, code: `${code}-SUB2`, credits: 4 },
+      ];
+
+      for (const sDef of defaultSubs) {
+        let sub = await Subject.findOne({ code: sDef.code, academicClass: classId });
+        if (!sub) {
+          await Subject.create({
+            name: sDef.name,
+            code: sDef.code,
+            credits: sDef.credits,
+            department: enrollment.department._id,
+            academicClass: classId,
+            semester: 3,
+          });
+        }
+      }
+      subjects = await Subject.find({ academicClass: classId });
+    }
 
     let grandTotalSessions = 0;
     let grandTotalPresent = 0;

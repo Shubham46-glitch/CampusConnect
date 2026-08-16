@@ -68,7 +68,12 @@ export const registerUser = async (req, res, next) => {
         });
       }
       if (!deptDoc) {
-        return res.status(400).json({ message: `Department "${department}" does not exist` });
+        const codeStr = String(department.trim()).split(' ').map(w => w[0]).join('').toUpperCase();
+        deptDoc = await Department.create({
+          name: department.trim(),
+          code: codeStr,
+          description: `${department.trim()} Department`,
+        });
       }
 
       // Resolve AcademicClass Document
@@ -82,13 +87,11 @@ export const registerUser = async (req, res, next) => {
         });
       }
       if (!classDoc) {
-        return res.status(400).json({ message: `Class / Division "${classInput}" does not exist` });
-      }
-
-      // STRICT BACKEND VALIDATION: Check class belongs to selected department
-      if (classDoc.department.toString() !== deptDoc._id.toString()) {
-        return res.status(400).json({
-          message: `Invalid class selection: "${classDoc.name}" does not belong to "${deptDoc.name}" department.`,
+        classDoc = await AcademicClass.create({
+          name: String(classInput).trim(),
+          department: deptDoc._id,
+          year: 'Second Year',
+          semester: 3,
         });
       }
     } else if (userRole === 'faculty') {
