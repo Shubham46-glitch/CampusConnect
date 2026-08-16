@@ -138,7 +138,7 @@ const seedStudents = async () => {
         }).populate('student');
 
         let currentCount = existingEnrollments.length;
-        const target = 20;
+        const target = 60;
 
         if (currentCount < target) {
           const newUsersToCreate = [];
