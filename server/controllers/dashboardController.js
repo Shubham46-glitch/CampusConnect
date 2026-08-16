@@ -4,6 +4,7 @@ import Assignment from '../models/Assignment.js';
 import Submission from '../models/Submission.js';
 import Complaint from '../models/Complaint.js';
 import Announcement from '../models/Announcement.js';
+import StudentEnrollment from '../models/StudentEnrollment.js';
 
 // @desc    Get Student Dashboard Statistics & Data
 // @route   GET /api/dashboard/student
@@ -30,28 +31,46 @@ export const getStudentDashboardStats = async (req, res, next) => {
       participants: studentId,
     });
 
-    // 3. Active Assignments for student's department
-    const activeAssignments = await Assignment.find({
-      department: studentDepartment,
+    // 3. Pending / Active Assignments targeted specifically to student's division & excluding submitted assignments
+    const submittedAssignmentIds = await Submission.find({ student: studentId }).distinct('assignment');
+    const enrollment = await StudentEnrollment.findOne({ student: studentId, status: 'active' }).populate('academicClass');
+    const studentClassId = enrollment?.academicClass?._id;
+    const studentClassName = enrollment?.academicClass?.name || '';
+    const isD1 = /D1|Div 1|Division 1|\bSec A\b/i.test(studentClassName);
+    const isD2 = /D2|Div 2|Division 2|\bSec B\b/i.test(studentClassName);
+
+    const escapeRegex = (text) => String(text).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+    const deptRegex = new RegExp(`^${escapeRegex(studentDepartment.trim())}$`, 'i');
+
+    const assignmentOrConditions = [];
+    if (studentClassId) {
+      assignmentOrConditions.push({ academicClass: studentClassId });
+    }
+    assignmentOrConditions.push({
+      $and: [
+        { $or: [{ academicClass: null }, { academicClass: { $exists: false } }] },
+        {
+          $or: [
+            { section: { $in: ['All Divisions', 'all', 'ALL', '', null] } },
+            { section: { $exists: false } },
+            { section: new RegExp(`^${escapeRegex(studentClassName)}$`, 'i') },
+            ...(isD1 ? [{ section: /D1|Div 1|Division 1|Sec A/i }] : []),
+            ...(isD2 ? [{ section: /D2|Div 2|Division 2|Sec B/i }] : []),
+          ],
+        },
+      ],
+    });
+
+    const pendingAssignmentsList = await Assignment.find({
+      department: deptRegex,
       status: 'active',
-    }).select('_id title subject dueDate faculty totalMarks department');
+      _id: { $nin: submittedAssignmentIds },
+      $or: assignmentOrConditions,
+    })
+      .select('_id title subject dueDate faculty totalMarks department section academicClass')
+      .sort({ dueDate: 1 });
 
-    const activeAssignmentsCount = activeAssignments.length;
-
-    // 4. Pending Assignments (active assignments not yet submitted by student)
-    const activeAssignmentIds = activeAssignments.map((a) => a._id);
-
-    const submittedAssignmentIds = await Submission.find({
-      student: studentId,
-      assignment: { $in: activeAssignmentIds },
-    }).distinct('assignment');
-
-    const submittedIdsSet = new Set(submittedAssignmentIds.map((id) => id.toString()));
-
-    const pendingAssignmentsList = activeAssignments
-      .filter((a) => !submittedIdsSet.has(a._id.toString()))
-      .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-
+    const activeAssignmentsCount = pendingAssignmentsList.length;
     const pendingAssignmentsCount = pendingAssignmentsList.length;
 
     // 5. My Complaints (submitted by req.user._id)

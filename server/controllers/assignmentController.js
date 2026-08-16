@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import StudentEnrollment from '../models/StudentEnrollment.js';
 import AcademicClass from '../models/AcademicClass.js';
 import Department from '../models/Department.js';
+import Notification from '../models/Notification.js';
 import { createNotification } from './notificationController.js';
 import { logActivity } from '../utils/activityLogger.js';
 
@@ -284,11 +285,12 @@ export const deleteAssignment = async (req, res, next) => {
       });
     }
 
-    // Clean up related submission documents
+    // Clean up related submission & notification documents
     await Submission.deleteMany({ assignment: assignment._id });
+    await Notification.deleteMany({ relatedId: assignment._id, relatedType: 'Assignment' });
 
     await Assignment.deleteOne({ _id: assignment._id });
-    res.json({ message: 'Assignment and related submissions deleted successfully' });
+    res.json({ message: 'Assignment, related submissions, and notifications deleted successfully' });
   } catch (error) {
     next(error);
   }
