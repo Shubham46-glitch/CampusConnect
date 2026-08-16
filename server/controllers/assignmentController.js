@@ -2,8 +2,12 @@ import Assignment from '../models/Assignment.js';
 import Submission from '../models/Submission.js';
 import User from '../models/User.js';
 import StudentEnrollment from '../models/StudentEnrollment.js';
+import AcademicClass from '../models/AcademicClass.js';
+import Department from '../models/Department.js';
 import { createNotification } from './notificationController.js';
 import { logActivity } from '../utils/activityLogger.js';
+
+const escapeRegex = (text) => String(text).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 
 // @desc    Get assignments for authenticated user (Role/Department filtered & Division/Section matched)
 // @route   GET /api/assignments
@@ -14,58 +18,83 @@ export const getAssignments = async (req, res, next) => {
     let query = {};
 
     if (role === 'student') {
-      // Find the student's active academic class / division enrollment
-      const enrollment = await StudentEnrollment.findOne({ student: req.user._id, status: 'active' }).populate('academicClass');
+      const studentId = req.user._id;
+
+      // 1. Fetch IDs of assignments ALREADY submitted by this student
+      const submittedAssignmentIds = await Submission.find({ student: studentId }).distinct('assignment');
+
+      // 2. Resolve student's active enrollment & academic class
+      let enrollment = await StudentEnrollment.findOne({ student: studentId, status: 'active' })
+        .populate('academicClass');
+
+      // Auto-enroll if missing
+      if (!enrollment && req.user.department) {
+        const targetDept = req.user.department.trim();
+        const code = targetDept.split(' ').map((w) => w[0]).join('').toUpperCase();
+        let deptDoc = await Department.findOne({ name: new RegExp(`^${escapeRegex(targetDept)}$`, 'i') });
+        if (!deptDoc) {
+          deptDoc = await Department.create({ name: targetDept, code, description: `${targetDept} Department` });
+        }
+        let classDoc = await AcademicClass.findOne({ department: deptDoc._id, name: `${code}-D1` });
+        if (!classDoc) {
+          classDoc = await AcademicClass.create({ name: `${code}-D1`, department: deptDoc._id, year: 'Second Year', semester: 3 });
+        }
+        enrollment = await StudentEnrollment.create({
+          student: studentId,
+          academicClass: classDoc._id,
+          department: deptDoc._id,
+          rollNumber: req.user.profileInfo?.rollNumber || `${code}-01`,
+          status: 'active',
+        });
+        enrollment = await StudentEnrollment.findById(enrollment._id).populate('academicClass');
+      }
+
       const studentClassId = enrollment?.academicClass?._id;
       const studentClassName = enrollment?.academicClass?.name || '';
-      const studentSection = req.user.profileInfo?.section || '';
+      const isD1 = /D1|Div 1|Division 1|\bSec A\b/i.test(studentClassName);
+      const isD2 = /D2|Div 2|Division 2|\bSec B\b/i.test(studentClassName);
 
-      const allowedSections = ['', 'all', 'All', 'All Divisions', 'all divisions'];
-      if (studentClassName) allowedSections.push(studentClassName);
-      if (studentSection) allowedSections.push(studentSection);
+      const deptRegex = new RegExp(`^${escapeRegex(department.trim())}$`, 'i');
 
-      // Clean string to remove generic year/semester terms that contain numbers (e.g., "Second Year", "Year 2", "Sem 2")
-      const cleanClassStr = `${studentClassName} ${studentSection}`
-        .replace(/first year|second year|third year|fourth year|1st year|2nd year|3rd year|4th year|year \d|sem \d|semester \d/gi, '');
+      const orConditions = [];
 
-      // Check if student is strictly D1 or D2 division
-      const isD1 = /D1|Div 1|Division 1|\bSec A\b|\bSection A\b/i.test(cleanClassStr);
-      const isD2 = /D2|Div 2|Division 2|\bSec B\b|\bSection B\b/i.test(cleanClassStr);
-
-      const orConditions = [
-        { section: { $in: allowedSections } },
-        { section: '' },
-        { section: null },
-        { section: { $exists: false } },
-      ];
-
+      // If assignment has academicClass matching student's class ID
       if (studentClassId) {
         orConditions.push({ academicClass: studentClassId });
       }
 
-      if (isD1 && !isD2) {
-        allowedSections.push('Div 1', 'Division 1', 'D1', 'Section A', 'SEC A', 'SEC-A');
-        orConditions.push({ section: { $regex: /d1|div 1|division 1|sec a|section a/i } });
-      } else if (isD2 && !isD1) {
-        allowedSections.push('Div 2', 'Division 2', 'D2', 'Section B', 'SEC B', 'SEC-B');
-        orConditions.push({ section: { $regex: /d2|div 2|division 2|sec b|section b/i } });
-      } else if (isD1 && isD2) {
-        allowedSections.push('Div 1', 'Division 1', 'D1', 'Section A', 'Div 2', 'Division 2', 'D2', 'Section B');
-        orConditions.push({ section: { $regex: /d1|d2|div 1|div 2|division 1|division 2/i } });
-      }
+      // Or assignment is for All Divisions (no specific academicClass set)
+      const allDivisionsSubQuery = {
+        $and: [
+          { $or: [{ academicClass: null }, { academicClass: { $exists: false } }] },
+          {
+            $or: [
+              { section: { $in: ['All Divisions', 'all', 'ALL', '', null] } },
+              { section: { $exists: false } },
+              { section: new RegExp(`^${escapeRegex(studentClassName)}$`, 'i') },
+              ...(isD1 ? [{ section: /D1|Div 1|Division 1|Sec A/i }] : []),
+              ...(isD2 ? [{ section: /D2|Div 2|Division 2|Sec B/i }] : []),
+            ],
+          },
+        ],
+      };
+
+      orConditions.push(allDivisionsSubQuery);
 
       query = {
-        department: department,
+        department: deptRegex,
+        _id: { $nin: submittedAssignmentIds },
         $or: orConditions,
       };
     } else if (role === 'faculty') {
+      const deptRegex = new RegExp(`^${escapeRegex(department.trim())}$`, 'i');
       query = {
         $or: [
           { faculty: req.user._id },
-          { department: department },
+          { department: deptRegex },
         ],
       };
-    } // Admin sees all assignments
+    }
 
     const assignments = await Assignment.find(query)
       .populate('faculty', 'name email role department')
