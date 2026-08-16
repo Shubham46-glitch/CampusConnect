@@ -1,4 +1,6 @@
 import User from '../models/User.js';
+import AcademicClass from '../models/AcademicClass.js';
+import StudentEnrollment from '../models/StudentEnrollment.js';
 import { logActivity } from '../utils/activityLogger.js';
 
 // @desc    Get all users (admin only)
@@ -44,9 +46,19 @@ export const getStudents = async (req, res, next) => {
       ];
     }
 
-    // Status Filter
-    if (req.query.status && req.query.status !== 'all') {
-      query.status = req.query.status;
+    // Division / Class Filter
+    const divisionFilter = req.query.division || req.query.className || req.query.class;
+    if (divisionFilter && divisionFilter !== 'all' && divisionFilter !== 'All Divisions') {
+      const classRegex = new RegExp(escapeRegex(divisionFilter.trim()), 'i');
+      const matchingClasses = await AcademicClass.find({ name: classRegex }).select('_id');
+      const matchingClassIds = matchingClasses.map((c) => c._id);
+
+      const enrollments = await StudentEnrollment.find({
+        academicClass: { $in: matchingClassIds },
+      }).select('student');
+      const studentIds = enrollments.map((e) => e.student);
+
+      query._id = { $in: studentIds };
     }
 
     const total = await User.countDocuments(query);
@@ -56,8 +68,28 @@ export const getStudents = async (req, res, next) => {
       .skip(skip)
       .limit(limit);
 
+    // Populate student enrollment and division/class information
+    const userIds = users.map((u) => u._id);
+    const enrollments = await StudentEnrollment.find({ student: { $in: userIds } })
+      .populate('academicClass', 'name year semester');
+
+    const enrollmentMap = new Map();
+    enrollments.forEach((e) => {
+      if (e.student) {
+        enrollmentMap.set(e.student.toString(), e.academicClass);
+      }
+    });
+
+    const enrichedUsers = users.map((u) => {
+      const uObj = u.toObject();
+      const aClass = enrollmentMap.get(u._id.toString());
+      uObj.academicClass = aClass || null;
+      uObj.division = aClass?.name || u.profileInfo?.section || 'D1';
+      return uObj;
+    });
+
     res.json({
-      users,
+      users: enrichedUsers,
       total,
       page,
       pages: Math.ceil(total / limit) || 1,

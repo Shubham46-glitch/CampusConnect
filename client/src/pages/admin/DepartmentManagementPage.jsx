@@ -243,7 +243,7 @@ const DepartmentManagementPage = () => {
           <Table
             headers={
               viewTab === 'students'
-                ? ['Student Name', 'Email Address', 'Department', 'Roll Number', 'Status']
+                ? ['Student Name', 'Email Address', 'Department', 'Division / Class', 'Roll Number', 'Status']
                 : ['Faculty Name', 'Email Address', 'Department', 'Employee ID', 'Status']
             }
           >
@@ -252,6 +252,13 @@ const DepartmentManagementPage = () => {
                 <td className="px-4 py-3 font-semibold text-slate-900">{u.name}</td>
                 <td className="px-4 py-3 text-slate-600 font-mono text-[11px]">{u.email}</td>
                 <td className="px-4 py-3 font-medium text-brand-700">{u.department || 'Institution-Wide'}</td>
+                {viewTab === 'students' && (
+                  <td className="px-4 py-3 font-semibold text-slate-700">
+                    <Badge variant="indigo" className="text-[11px] font-mono">
+                      {u.division || u.academicClass?.name || 'D1'}
+                    </Badge>
+                  </td>
+                )}
                 <td className="px-4 py-3 text-slate-500 font-mono text-[11px]">
                   {viewTab === 'students' ? u.profileInfo?.rollNumber || 'N/A' : u.profileInfo?.employeeId || 'N/A'}
                 </td>

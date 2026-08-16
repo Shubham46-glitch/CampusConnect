@@ -40,6 +40,7 @@ const UserManagementPage = () => {
   // Query & Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDept, setSelectedDept] = useState('All Departments');
+  const [selectedDivision, setSelectedDivision] = useState('All Divisions');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [page, setPage] = useState(1);
   const limit = 10;
@@ -62,6 +63,7 @@ const UserManagementPage = () => {
       const params = {
         search: searchTerm,
         department: selectedDept === 'All Departments' ? '' : selectedDept,
+        division: selectedDivision === 'All Divisions' ? '' : selectedDivision,
         status: selectedStatus,
         page,
         limit,
@@ -85,7 +87,7 @@ const UserManagementPage = () => {
 
   useEffect(() => {
     loadData();
-  }, [activeTab, page, selectedDept, selectedStatus]);
+  }, [activeTab, page, selectedDept, selectedDivision, selectedStatus]);
 
   // Debounced search trigger
   useEffect(() => {
@@ -175,9 +177,9 @@ const UserManagementPage = () => {
         </div>
 
         {/* Search Input & Select Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className={`grid grid-cols-1 ${activeTab === 'students' ? 'sm:grid-cols-4' : 'sm:grid-cols-3'} gap-3`}>
           {/* Search Box */}
-          <div className="relative sm:col-span-1">
+          <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
             <input
               type="text"
@@ -213,6 +215,24 @@ const UserManagementPage = () => {
               ))}
             </select>
           </div>
+
+          {/* Division Filter (Student Tab Only) */}
+          {activeTab === 'students' && (
+            <div>
+              <select
+                value={selectedDivision}
+                onChange={(e) => {
+                  setSelectedDivision(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full py-1.5 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-slate-800"
+              >
+                <option value="All Divisions">All Divisions</option>
+                <option value="D1">Division 1 (D1)</option>
+                <option value="D2">Division 2 (D2)</option>
+              </select>
+            </div>
+          )}
 
           {/* Status Filter */}
           <div>
@@ -250,7 +270,7 @@ const UserManagementPage = () => {
           <Table
             headers={
               activeTab === 'students'
-                ? ['Student Name', 'Email', 'Department', 'Roll Number', 'Status', 'Registered Date', 'Actions']
+                ? ['Student Name', 'Email', 'Department', 'Division / Class', 'Roll Number', 'Status', 'Registered Date', 'Actions']
                 : ['Faculty Name', 'Email', 'Department', 'Employee ID', 'Status', 'Registered Date', 'Actions']
             }
           >
@@ -260,6 +280,13 @@ const UserManagementPage = () => {
                   <td className="px-4 py-3 font-semibold text-slate-900">{u.name}</td>
                   <td className="px-4 py-3 text-slate-600 font-mono text-[11px]">{u.email}</td>
                   <td className="px-4 py-3 text-slate-600">{u.department || 'Computer Science'}</td>
+                  {activeTab === 'students' && (
+                    <td className="px-4 py-3 font-semibold text-slate-700">
+                      <Badge variant="indigo" className="text-[11px] font-mono">
+                        {u.division || u.academicClass?.name || 'D1'}
+                      </Badge>
+                    </td>
+                  )}
                   <td className="px-4 py-3 text-slate-500 font-mono text-[11px]">
                     {activeTab === 'students'
                       ? u.profileInfo?.rollNumber || 'N/A'
