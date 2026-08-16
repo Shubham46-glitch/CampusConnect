@@ -71,7 +71,7 @@ export const getEventParticipation = async (req, res) => {
         $project: {
           title: 1,
           capacity: { $ifNull: ['$capacity', 0] },
-          registeredCount: { $size: { $ifNull: ['$registeredStudents', []] } },
+          registeredCount: { $size: { $ifNull: ['$participants', []] } },
         },
       },
       { $sort: { registeredCount: -1 } },
@@ -139,14 +139,18 @@ export const getComplaintStatusStats = async (req, res) => {
 
     const formattedMap = {
       pending: 0,
+      in_progress: 0,
       'in-progress': 0,
       resolved: 0,
       rejected: 0,
     };
 
     complaintStats.forEach((item) => {
-      if (item._id && formattedMap.hasOwnProperty(item._id)) {
+      if (item._id) {
         formattedMap[item._id] = item.count;
+        if (item._id === 'in_progress') {
+          formattedMap['in-progress'] = item.count;
+        }
       }
     });
 
