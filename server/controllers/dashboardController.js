@@ -281,6 +281,12 @@ export const getAdminDashboardStats = async (req, res, next) => {
       resolvedComplaints,
       inProgressComplaints,
       totalComplaints,
+      complaintStats: {
+        pending: pendingComplaints,
+        inProgress: inProgressComplaints,
+        resolved: resolvedComplaints,
+        total: totalComplaints,
+      },
       recentUsers,
       recentComplaints,
     });

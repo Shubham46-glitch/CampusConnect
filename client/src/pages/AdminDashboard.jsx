@@ -83,10 +83,16 @@ const AdminDashboard = () => {
     totalEvents = 0,
     totalAnnouncements = 0,
     totalAssignments = 0,
-    complaintStats = { pending: 0, inProgress: 0, resolved: 0, total: 0 },
     recentUsers = [],
     recentComplaints = [],
   } = data || {};
+
+  const complaintStats = data?.complaintStats || {
+    pending: data?.pendingComplaints || 0,
+    inProgress: data?.inProgressComplaints || 0,
+    resolved: data?.resolvedComplaints || 0,
+    total: data?.totalComplaints || 0,
+  };
 
   const overallAttendancePct = attendanceData?.overallPercentage || 0;
 
